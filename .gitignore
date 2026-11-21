@@ -1,0 +1,16 @@
+# Windows and Python temp
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.spec
+build/
+dist/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+# Keep the curated sound pack but never add unrelated recordings by accident
+source-audio/
+original-audio/

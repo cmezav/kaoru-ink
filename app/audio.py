@@ -1,6 +1,6 @@
-"""Natural source recordings. Only B loops and only during a mouse stroke.
-P/E play one original recording per drag; no artificial spectral noise beds.
-At 1.00x and zero effects, the 44.1 kHz source PCM is fed unchanged to mixer.
+"""Natural original recordings for each stroke. P/E never loop, synthesize,
+or re-trigger in the same drag. B alone may loop while actually painting.
+Every tool has independent settings. Neutral processing is bit-exact.
 """
 import json
 import random
@@ -87,9 +87,9 @@ class AudioEngine:
         self.samples={s['id']:s for s in library['samples']}
         self.by_category={cat:[s['id'] for s in library['samples'] if s['category']==cat] for cat in self.MODES}
         if any(not self.by_category[c] for c in self.MODES):raise ValueError('Missing samples for a P/B/E tool')
-        self.last_random={};self.cache={};self.active_mode=None
-        self.volume=.76;self.speed=100;self.pitch=0;self.brightness=0
-        self.dynamic=70;self.tool_volumes={m:100 for m in self.MODES}
+        self.last_random={};self.cache={};self.active_mode=None;self.preview_mode=None
+        self.volume=.76
+        self.effects={m:{"volume":100,"speed":100,"pitch":0,"brightness":0,"dynamics":70} for m in self.MODES}
         self.muted=False
         self.motion_gate=.0;self.pressure=0.5;self.motion_estimate=.5
         self.real_pressure=False;self.pressure_time=0.
@@ -109,12 +109,20 @@ class AudioEngine:
             return np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2')
 
     def _sound(self,ident,kind):
-        key=(ident,kind,self.speed,self.pitch,self.brightness)
+        category=self.samples[ident]["category"]
+        fx=self.effects[category]
+        key=(ident,kind,fx["speed"],fx["pitch"],fx["brightness"])
         if key not in self.cache:
             sample=self.samples[ident]
             pcm=self._load_pcm(sample['preview_file' if kind=='preview' else 'file'])
-            if kind=='loop':pcm=_brush_loop(pcm)
-            pcm=_pitch_and_speed(pcm,self.speed,self.pitch,self.brightness)
+            # Transform only the *short original recording*. Applying effects
+            # to a two-minute continuation would stall the UI for many seconds.
+            pcm=_pitch_and_speed(pcm,fx['speed'],fx['pitch'],fx['brightness'])
+            if kind=='loop':
+                pcm=_brush_loop(pcm)
+            # P/E play the unmodified original once. There is deliberately
+            # no granular sustain, fake friction, repeated attack or loop.
+            # Short recordings naturally end before a very long stroke.
             if len(self.cache)>=6:self.cache.clear()
             self.cache[key]=self.pg.mixer.Sound(buffer=pcm.tobytes())
         return self.cache[key]
@@ -155,14 +163,17 @@ class AudioEngine:
             self.real_pressure=False
         pressure=self.pressure if self.real_pressure else self.motion_estimate
         response=.15+.85*(pressure**.68)
-        sensitivity=self.dynamic/100.
-        strength=(1.-sensitivity)+sensitivity*response
         for mode,ch in self.channels.items():
-            multiplier=(self.tool_volumes[mode]/100.)
+            sensitivity=self.effects[mode]['dynamics']/100.
+            strength=(1.-sensitivity)+sensitivity*response
+            multiplier=self.effects[mode]['volume']/100.
             if mode==self.active_mode:
                 multiplier*=self.motion_gate*strength
             ch.set_volume(min(1.,base*multiplier))
-        self.preview_channel.set_volume(base*.85)
+        if self.preview_mode:
+            self.preview_channel.set_volume(base*(self.effects[self.preview_mode]['volume']/100.)*.85)
+        else:
+            self.preview_channel.set_volume(base*.85)
 
     def stop_stroke(self,fade_ms=100):
         if self.active_mode is not None:
@@ -180,34 +191,28 @@ class AudioEngine:
         self.volume=max(0,min(100,int(value)))/100.
         self.refresh_volume()
 
+    def set_effect(self,mode,key,value):
+        """Each tool owns all five sliders; no shared pitch or speed."""
+        if mode not in self.MODES or key not in self.effects[mode]:
+            raise ValueError('Unknown audio tool or setting')
+        bounds={'volume':(0,100),'speed':(45,120),'pitch':(-8,8),
+                'brightness':(-100,100),'dynamics':(0,100)}
+        lo,hi=bounds[key]
+        self.effects[mode][key]=max(lo,min(hi,int(value)))
+        if key in ('speed','pitch','brightness'):
+            # Changing one tool never invalidates or stops another tool.
+            self.cache={k:v for k,v in self.cache.items() if self.samples[k[0]]['category']!=mode}
+            if self.active_mode==mode:self.stop_stroke()
+            if self.preview_mode==mode:self.preview_channel.stop()
+        self.refresh_volume()
+
     def set_tool_volume(self,mode,value):
-        if mode in self.MODES:self.tool_volumes[mode]=max(0,min(100,int(value)))
-        self.refresh_volume()
-
-    def set_dynamics(self,value):
-        self.dynamic=max(0,min(100,int(value)))
-        self.refresh_volume()
-
-    def set_speed(self,value):
-        self.speed=max(45,min(120,int(value)))
-        self._change_processing()
-
-    def set_pitch(self,value):
-        self.pitch=max(-8,min(8,int(value)))
-        self._change_processing()
-
-    def set_brightness(self,value):
-        self.brightness=max(-100,min(100,int(value)))
-        self._change_processing()
-
-    def _change_processing(self):
-        self.stop_stroke()
-        self.preview_channel.stop()
-        self.cache.clear()
+        self.set_effect(mode,'volume',value)
 
     def preview(self,category,desired):
         ident=self.select(category,desired)
         self.preview_channel.stop()
+        self.preview_mode=category
         self.preview_channel.play(self._sound(ident,'preview'),loops=0,fade_ms=18)
         self.refresh_volume()
         return self.samples[ident]['label']

@@ -14,18 +14,16 @@ class UIChecks(unittest.TestCase):
         source=(ROOT/'app/main.py').read_text(encoding='utf8')
         self.assertIn('assets/icon.png;assets',workflow)
         self.assertIn("original_png=resource('assets/icon.png')",source)
-    def test_one_click_restore_original_tone(self):
+    def test_separate_panels_and_tone_reset_for_p_b_e(self):
         src=(ROOT/'app/ui.py').read_text(encoding='utf8')
-        self.assertIn('def _restore_original_tone(self):',src)
-        self.assertIn("('speed',100)",src)
-        self.assertIn("('pitch',0)",src)
-        self.assertIn("('brightness',0)",src)
+        self.assertIn("self.mix_sliders[setting]=slider",src)
+        self.assertIn("self.audio.set_effect(mode,param,value)",src)
+        self.assertIn("def _restore_original_tone(self,mode)",src)
+        self.assertIn("self.original_tone_buttons[mode]=restore",src)
 
-    def test_effect_settings_persist(self):
+    def test_settings_persist_independently(self):
         src=(ROOT/'app/config.py').read_text(encoding='utf8')
-        tree=ast.parse(src)
-        assign=next(node for node in tree.body if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='DEFAULTS' for t in node.targets))
-        keys=[k.value for k in assign.value.keys]
-        for key in ('volume','speed','pitch','brightness','dynamics','pencil_volume','brush_volume','eraser_volume'):
-            self.assertIn(key,keys)
+        self.assertIn("DEFAULTS[f'{mode}_{param}']=initial",src)
+        self.assertIn("'per_tool_controls_v1':True",src)
+        self.assertIn("settings[key]=max(lo,min(hi,settings[key]))",src)
 if __name__=='__main__':unittest.main()

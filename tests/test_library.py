@@ -35,7 +35,8 @@ class LibraryTests(unittest.TestCase):
     def test_only_brush_loops(self):
         audio=(ROOT/'app/audio.py').read_text(encoding='utf8')
         self.assertIn("loops=(-1 if category=='brush' else 0)",audio)
-        self.assertIn('if kind==\'loop\':pcm=_brush_loop(pcm)',audio)
+        self.assertIn("if kind=='loop':",audio)
+        self.assertNotIn("_continuous_friction",audio)
 
     def test_source_parses(self):
         for p in list((ROOT/'app').glob('*.py')) + [ROOT/'tools/import_public_sfx.py']:

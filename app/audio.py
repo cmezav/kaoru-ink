@@ -184,6 +184,51 @@ class GrainBank:
         return out
 
 
+class PencilFlowBank(GrainBank):
+    """P-only: use longer quiet interior sections instead of rapid micro-grains.
+
+    B/J and E keep the exact original GrainBank. The longer, irregular
+    segments reduce the repeated short 'scratch-scratch' attacks the user
+    heard in P while retaining the real-time movement and pressure response.
+    This is continuous reconstruction from the existing pencil recordings,
+    not a claim that the recorded material lasts forever by itself.
+    """
+
+    def _new_grain(self):
+        ident = self._pick_id()
+        recording = self.sources[ident]
+        lo, hi = self.regions[ident]
+        available = hi - lo
+        # P ONLY: 0.95-1.8s instead of the previous 0.26-0.51s. This
+        # reduces repeated attacks without changing speed or pitch.
+        target_size = int(self.rng.uniform(.95, 1.8) * RATE)
+        size = min(target_size, available)
+        size = max(32, size - size % 2)
+        size = min(size, len(recording) - len(recording) % 2)
+        if size < 32:
+            raise ValueError('Pencil sample too short')
+        maximum = max(lo, hi-size)
+        if maximum <= lo:
+            offset = max(0, min(lo, len(recording)-size))
+        else:
+            # Prefer a sustained stroke interior instead of pen contact,
+            # a separate attack, or the silence after a lift.
+            positions = [self.rng.randint(lo, maximum) for _ in range(11)]
+            reference = self.rms_by_id[ident]
+            def stability(start):
+                sample = recording[start:start+size]
+                chunks = np.array_split(sample, 12)
+                levels = np.array([np.sqrt(np.mean(part*part) + 1.e-12)
+                                   for part in chunks])
+                # Gaps, marked 'restarts', and peaks are undesirable.
+                return (2.5 * np.std(levels) / (reference+1.e-6)
+                        + .9 * np.max(np.abs(np.diff(levels))) / (reference+1.e-6)
+                        + .3 * abs(np.mean(levels)-reference)/(reference+1.e-6))
+            offset = min(positions, key=stability)
+        segment = np.ascontiguousarray(recording[offset:offset+size]) * self.gain_by_id[ident]
+        return segment, np.hanning(size).astype('float32')
+
+
 class SeamlessBrushLoop:
     """Read a long, already seam-crossfaded recording as one continuous loop.
 
@@ -298,7 +343,10 @@ class AudioEngine:
         ids = [desired] if desired in self.by_category[category] else self._pool(category,direction)
         pcm = {s: self._processed(s) for s in ids}
         weights = {s: (3.5 if self.samples[s].get('favorite') else 1.) for s in ids}
-        return GrainBank(pcm, weights, seed=seed)
+        # Only pencil gets the smoother long-fragment stream. Never route
+        # brush or eraser through this bank.
+        bank_type = PencilFlowBank if category == 'pencil' else GrainBank
+        return bank_type(pcm, weights, seed=seed)
 
     def select(self, category, desired):
         if desired in self.by_category[category]:

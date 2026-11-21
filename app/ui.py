@@ -1,7 +1,7 @@
 """Kaoru Ink Windows settings panel and system-tray control."""
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer
-from PySide6.QtGui import QIcon,QAction,QFont
+from PySide6.QtGui import QIcon,QAction,QFont,QPixmap
 from PySide6.QtWidgets import (
     QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFrame,
     QComboBox,QSlider,QCheckBox,QSystemTrayIcon,QMenu,QGraphicsDropShadowEffect,
@@ -62,6 +62,7 @@ class MainWindow(QMainWindow):
     def __init__(self,app_icon:Path,audio,settings,app):
         super().__init__()
         self.app=app
+        self.app_icon=app_icon
         self.audio=audio
         self.settings=settings
         self.controller=StrokeController(audio,settings)
@@ -99,6 +100,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(wrapper)
         root=QVBoxLayout(wrapper);root.setContentsMargins(28,23,28,18);root.setSpacing(17)
         header=QHBoxLayout()
+        logo=QLabel()
+        logo.setPixmap(QPixmap(str(self.app_icon)).scaled(66,66,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
+        header.addWidget(logo)
         namebox=QVBoxLayout();namebox.setSpacing(0)
         namebox.addWidget(text('KAORU · AUDIO STUDIO','eyebrow'))
         namebox.addWidget(text('Kaoru Ink','title'))
@@ -130,17 +134,17 @@ class MainWindow(QMainWindow):
         self.pencil_button.setChecked(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('La tecla P activa trazos de lápiz; B activa pintura en bucle. También puedes cambiar desde aquí.','muted'))
+        h.addWidget(text('P: una sola reproducción por trazo, sostenida y suave. B: pintura en bucle solo mientras arrastras.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('78 sonidos remasterizados · elige uno o alterna automáticamente. Los ★ son los recortes de los segundos 7–9 que pediste.','muted'))
+        samples.layout().addWidget(text('78 sonidos remasterizados · P usa un solo sonido continuo; únicamente B repite su muestra. Los ★ son tus favoritos del segundo 7–9.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
-            ('short','01 · Trazos cortos','Los primeros movimientos rápidos al dibujar con P.','short_id'),
-            ('medium','02 · Trazos medios','Al mantener el movimiento un poco más de 0,19 s.','medium_id'),
-            ('long','03 · Trazos largos','Al mantener el mouse y dibujar más de 0,58 s.','long_id'),
+            ('short','01 · Inicio de trazo','El primer roce de P. Un sonido por trazo, sin repetir.','short_id'),
+            ('medium','02 · Cuerpo del trazo','Se une suavemente al inicio si mantienes P.','medium_id'),
+            ('long','03 · Textura sostenida','Se alarga en el mismo sonido de P, sin iniciar otro ni hacer loop.','long_id'),
             ('brush','04 · Pintar en bucle','Al deslizar el pincel con B, hasta detenerte.','brush_id')):
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
@@ -167,10 +171,10 @@ class MainWindow(QMainWindow):
         volume_col.addWidget(self.vol_slider);grid.addLayout(volume_col,1)
         speed_col=QVBoxLayout();speed_head=QHBoxLayout();speed_head.addWidget(text('Velocidad + tono'));speed_head.addStretch();self.speed_label=text('1.00×','value');speed_head.addWidget(self.speed_label)
         speed_col.addLayout(speed_head)
-        self.speed_slider=QSlider(Qt.Orientation.Horizontal);self.speed_slider.setRange(70,160);self.speed_slider.setSingleStep(5);self.speed_slider.setPageStep(5);self.speed_slider.setValue(self.settings['speed'])
+        self.speed_slider=QSlider(Qt.Orientation.Horizontal);self.speed_slider.setRange(45,120);self.speed_slider.setSingleStep(5);self.speed_slider.setPageStep(5);self.speed_slider.setValue(self.settings['speed'])
         speed_col.addWidget(self.speed_slider);grid.addLayout(speed_col,1)
         content.addLayout(grid)
-        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. Prueba 0,85× para trazos más suaves.','muted'))
+        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,65×. Baja a 0,50× para dibujar aún más despacio.','muted'))
         body.addWidget(controls)
         options,option_layout=panel()
         option_layout.addWidget(text('En segundo plano','headline'))
@@ -219,7 +223,7 @@ class MainWindow(QMainWindow):
     def _selected(self,category,setting):
         self.settings[setting]=self.combos[category].currentData()
         config.save(self.settings)
-        if category in ('brush','long'):
+        if category == 'brush':
             self.audio.refresh_live_loop(category,self.settings[setting])
 
     def _preview(self,category):

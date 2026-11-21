@@ -32,7 +32,7 @@ class LibraryTests(unittest.TestCase):
         self.assertGreaterEqual(by_cat['medium'],10)
         self.assertGreaterEqual(by_cat['long'],10)
         self.assertGreaterEqual(by_cat['brush'],10)
-        self.assertTrue(all(s['loop'] == (s['category'] in ('long','brush')) for s in self.samples))
+        self.assertTrue(all(s['loop'] == (s['category']=='brush') for s in self.samples))
 
     def test_requested_seven_second_favorite(self):
         favorites = [s for s in self.samples if s.get('favorite')]

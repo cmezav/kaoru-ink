@@ -8,7 +8,7 @@ DEFAULTS = {
     'start_at_login': True,
     'close_to_tray': True,
     'volume': 76,
-    'speed': 100,
+    'speed': 65,
     'short_id': 'auto',
     'medium_id': 'pencil_medium_fav_01',
     'long_id': 'pencil_fav_long_01',
@@ -33,7 +33,7 @@ def load():
     except (FileNotFoundError, ValueError, OSError):
         pass
     settings['volume'] = max(0, min(100, settings['volume']))
-    settings['speed'] = max(70, min(160, settings['speed']))
+    settings['speed'] = max(45, min(120, settings['speed']))
     return settings
 
 

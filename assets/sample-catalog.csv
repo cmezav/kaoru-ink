@@ -52,19 +52,19 @@ pencil_medium_11,Medio · punta seca 11,medium,pencil_medium_11.wav,pencil,15.28
 pencil_medium_12,Medio · grafito 12,medium,pencil_medium_12.wav,pencil,20.64,21.55,0.91,False,False,-3.1,-19.4
 pencil_medium_13,Medio · grafito 13,medium,pencil_medium_13.wav,pencil,21.49,22.51,1.02,False,False,-2.9,-19.6
 drawing_medium_01,Medio · grafito áspero 01,medium,drawing_medium_01.wav,drawing,1.71,2.38,0.67,False,False,-3.8,-19.0
-pencil_long_01,Largo · lápiz suave 01,long,pencil_long_01.wav,pencil,0.7,2.1,1.305,True,False,-2.1,-19.0
-pencil_long_02,Largo · lápiz granulado 02,long,pencil_long_02.wav,pencil,2.6,4.24,1.545,True,False,-2.9,-19.6
-pencil_long_03,Largo · lápiz ligero 03,long,pencil_long_03.wav,pencil,5.23,6.74,1.415,True,False,-1.9,-19.0
-pencil_fav_long_01,★ Favorito 7–9s · completo,long,pencil_fav_long_01.wav,pencil,7.55,9.2,1.555,True,True,-3.6,-19.0
-pencil_fav_long_02,★ Favorito 8s · roce extendido,long,pencil_fav_long_02.wav,pencil,7.95,9.2,1.155,True,True,-2.1,-19.0
-pencil_long_04,Largo · lápiz continuo 04,long,pencil_long_04.wav,pencil,10.24,12.12,1.785,True,False,-2.4,-19.3
-pencil_long_05,Largo · lápiz fino 05,long,pencil_long_05.wav,pencil,12.56,14.02,1.365,True,False,-2.1,-19.8
-pencil_long_06,Largo · lápiz áspero 06,long,pencil_long_06.wav,pencil,14.62,16.08,1.365,True,False,-1.7,-19.0
-pencil_long_07,Largo · lápiz rítmico 07,long,pencil_long_07.wav,pencil,20.64,22.51,1.775,True,False,-3.0,-19.5
-drawing_long_01,Largo · grafito áspero 01,long,drawing_long_01.wav,drawing,0.72,1.2,0.403,True,False,-4.0,-19.0
-drawing_long_02,Largo · grafito áspero 02,long,drawing_long_02.wav,drawing,1.72,2.37,0.555,True,False,-4.5,-19.0
-drawing_long_03,Largo · grafito áspero 03,long,drawing_long_03.wav,drawing,2.84,3.23,0.328,True,False,-3.2,-19.0
-drawing_long_04,Largo · grafito áspero 04,long,drawing_long_04.wav,drawing,3.95,4.46,0.428,True,False,-5.4,-19.0
+pencil_long_01,Largo · lápiz suave 01,long,pencil_long_01.wav,pencil,0.7,2.1,1.305,False,False,-2.1,-19.0
+pencil_long_02,Largo · lápiz granulado 02,long,pencil_long_02.wav,pencil,2.6,4.24,1.545,False,False,-2.9,-19.6
+pencil_long_03,Largo · lápiz ligero 03,long,pencil_long_03.wav,pencil,5.23,6.74,1.415,False,False,-1.9,-19.0
+pencil_fav_long_01,★ Favorito 7–9s · completo,long,pencil_fav_long_01.wav,pencil,7.55,9.2,1.555,False,True,-3.6,-19.0
+pencil_fav_long_02,★ Favorito 8s · roce extendido,long,pencil_fav_long_02.wav,pencil,7.95,9.2,1.155,False,True,-2.1,-19.0
+pencil_long_04,Largo · lápiz continuo 04,long,pencil_long_04.wav,pencil,10.24,12.12,1.785,False,False,-2.4,-19.3
+pencil_long_05,Largo · lápiz fino 05,long,pencil_long_05.wav,pencil,12.56,14.02,1.365,False,False,-2.1,-19.8
+pencil_long_06,Largo · lápiz áspero 06,long,pencil_long_06.wav,pencil,14.62,16.08,1.365,False,False,-1.7,-19.0
+pencil_long_07,Largo · lápiz rítmico 07,long,pencil_long_07.wav,pencil,20.64,22.51,1.775,False,False,-3.0,-19.5
+drawing_long_01,Largo · grafito áspero 01,long,drawing_long_01.wav,drawing,0.72,1.2,0.403,False,False,-4.0,-19.0
+drawing_long_02,Largo · grafito áspero 02,long,drawing_long_02.wav,drawing,1.72,2.37,0.555,False,False,-4.5,-19.0
+drawing_long_03,Largo · grafito áspero 03,long,drawing_long_03.wav,drawing,2.84,3.23,0.328,False,False,-3.2,-19.0
+drawing_long_04,Largo · grafito áspero 04,long,drawing_long_04.wav,drawing,3.95,4.46,0.428,False,False,-5.4,-19.0
 paint_loop_01,Pintura · tela sutil 01,brush,paint_loop_01.wav,brush,0.08,1.47,1.295,True,False,-6.9,-19.0
 paint_loop_02,Pintura · tela sutil 02,brush,paint_loop_02.wav,brush,1.49,3.17,1.585,True,False,-6.1,-19.0
 paint_loop_03,Pintura · brocha fuerte 03,brush,paint_loop_03.wav,brush,3.44,4.18,0.645,True,False,-5.0,-19.0

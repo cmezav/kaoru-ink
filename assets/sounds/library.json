@@ -753,7 +753,7 @@
       "start_sec": 0.7,
       "end_sec": 2.1,
       "duration_sec": 1.305,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -2.1,
       "rms_dbfs": -19.0
@@ -767,7 +767,7 @@
       "start_sec": 2.6,
       "end_sec": 4.24,
       "duration_sec": 1.545,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -2.9,
       "rms_dbfs": -19.6
@@ -781,7 +781,7 @@
       "start_sec": 5.23,
       "end_sec": 6.74,
       "duration_sec": 1.415,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -1.9,
       "rms_dbfs": -19.0
@@ -795,7 +795,7 @@
       "start_sec": 7.55,
       "end_sec": 9.2,
       "duration_sec": 1.555,
-      "loop": true,
+      "loop": false,
       "favorite": true,
       "peak_dbfs": -3.6,
       "rms_dbfs": -19.0
@@ -809,7 +809,7 @@
       "start_sec": 7.95,
       "end_sec": 9.2,
       "duration_sec": 1.155,
-      "loop": true,
+      "loop": false,
       "favorite": true,
       "peak_dbfs": -2.1,
       "rms_dbfs": -19.0
@@ -823,7 +823,7 @@
       "start_sec": 10.24,
       "end_sec": 12.12,
       "duration_sec": 1.785,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -2.4,
       "rms_dbfs": -19.3
@@ -837,7 +837,7 @@
       "start_sec": 12.56,
       "end_sec": 14.02,
       "duration_sec": 1.365,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -2.1,
       "rms_dbfs": -19.8
@@ -851,7 +851,7 @@
       "start_sec": 14.62,
       "end_sec": 16.08,
       "duration_sec": 1.365,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -1.7,
       "rms_dbfs": -19.0
@@ -865,7 +865,7 @@
       "start_sec": 20.64,
       "end_sec": 22.51,
       "duration_sec": 1.775,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -3.0,
       "rms_dbfs": -19.5
@@ -879,7 +879,7 @@
       "start_sec": 0.72,
       "end_sec": 1.2,
       "duration_sec": 0.403,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -4.0,
       "rms_dbfs": -19.0
@@ -893,7 +893,7 @@
       "start_sec": 1.72,
       "end_sec": 2.37,
       "duration_sec": 0.555,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -4.5,
       "rms_dbfs": -19.0
@@ -907,7 +907,7 @@
       "start_sec": 2.84,
       "end_sec": 3.23,
       "duration_sec": 0.328,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -3.2,
       "rms_dbfs": -19.0
@@ -921,7 +921,7 @@
       "start_sec": 3.95,
       "end_sec": 4.46,
       "duration_sec": 0.428,
-      "loop": true,
+      "loop": false,
       "favorite": false,
       "peak_dbfs": -5.4,
       "rms_dbfs": -19.0

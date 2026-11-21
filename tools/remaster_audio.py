@@ -163,11 +163,11 @@ def build(pencil:Path, drawing:Path, brush:Path, out:Path):
         y = sources[source]
         a=int(round(start*TARGET_RATE)); b=int(round(end*TARGET_RATE))
         if b>len(y): raise ValueError(f'{name} end out of bounds')
-        x=master(y[a:b].copy(),looping=loop)
+        x=master(y[a:b].copy(),looping=(source=='brush'))
         sf.write(str(out / f'{name}.wav'),x,TARGET_RATE,subtype='PCM_16')
-        samples.append({'id':name,'label':label,'category':'brush' if source=='brush' else ('medium' if '_medium_' in name else ('long' if loop else 'short')),
+        samples.append({'id':name,'label':label,'category':'brush' if source=='brush' else ('medium' if '_medium_' in name else ('long' if '_long_' in name else 'short')),
             'file':f'{name}.wav','source':source,'start_sec':start,'end_sec':end,'duration_sec':round(len(x)/TARGET_RATE,3),
-            'loop':loop,'favorite':fav,'peak_dbfs':round(float(20*np.log10(max(1e-8,np.max(abs(x))))),1),
+            'loop':source=='brush','favorite':fav,'peak_dbfs':round(float(20*np.log10(max(1e-8,np.max(abs(x))))),1),
             'rms_dbfs':round(float(20*np.log10(max(1e-8,np.sqrt(np.mean(x*x))))),1)})
     (out/'library.json').write_text(json.dumps({'format':1,'sample_rate':TARGET_RATE,'samples':samples},ensure_ascii=False,indent=2), encoding='utf-8')
     with (out.parent/'sample-catalog.csv').open('w',newline='',encoding='utf-8-sig') as f:

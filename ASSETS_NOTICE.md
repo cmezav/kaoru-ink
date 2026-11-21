@@ -11,3 +11,6 @@ Each exported WAV is a transformed excerpt of the source material, **not origina
 **Audio rights have not been independently verified.** A filename containing “no copyright” is not proof of a license. Do not redistribute these samples publicly or attach them to public Releases until you have confirmed that your permissions cover redistribution and derivative works. A private repository is the recommended default. The MIT license applies only to the original application source code, **not** to these audio files.
 
 The app does not download or transmit audio or user input. The clips are local resources bundled in the executable.
+
+
+La imagen de la nota musical azul que ahora sirve de icono fue proporcionada por la persona usuaria; no se ha verificado una licencia de redistribución independiente de esa imagen.

@@ -2,15 +2,17 @@
 
 **Sonidos naturales al dibujar con el mouse en Clip Studio Paint.** Inspirado en la idea de retroalimentación sonora de [Mechvibes](https://github.com/hainguyents13/mechvibes), pero con código independiente, limitado a Windows 10/11 y enfocado exclusivamente en trazos de dibujo.
 
-![Icono original de Kaoru Ink](assets/icon.png)
+![Logo de nota musical azul de Kaoru Ink](assets/icon.png)
+
+**v0.2:** logo azul aportado por la persona usuaria, lápiz P sin loop, B con loop, sonidos por defecto más lentos.
 
 ## ¿Qué hace?
 
 - **Solo funciona con Clip Studio Paint como ventana activa (en primer plano).** Si cambias a Chrome, al escritorio o a otra aplicación, se detienen los loops. El programa puede permanecer en la bandeja del sistema sin ocupar sitio en la barra de tareas.
-- Si pulsas **P** mientras Clip Studio Paint está al frente, activa el modo **Lápiz**. Un clic sin desplazamiento es silencioso; al mover el mouse con botón izquierdo presionado, reproduce un trazo corto, seguido de uno mediano cuando superas 0,19 s. Al mantener el botón y dibujar más de **0,58 s** y **28 píxeles** de recorrido, reproduce un trazo largo en bucle hasta detenerte o soltar el botón.
-- Si pulsas **B**, activa el modo **Pincel**. Mientras arrastras el mouse, elige un loop de pintura con uniones suavizadas. Al dejar de moverlo por **0,19 s** o soltarlo, el audio se desvanece.
+- Si pulsas **P** mientras Clip Studio Paint está al frente, activa el modo **Lápiz**. Un clic sin desplazamiento es silencioso; al mover el mouse con botón izquierdo presionado, inicia **UNA única reproducción** por cada trazo. La grabación combina suavemente un inicio corto, una parte media y una textura más larga; no vuelve a disparar otra muestra ni activa un bucle en P. La grabación se sostiene hasta 20 s como máximo y se desvanece cuando sueltas el botón o dejas de moverlo.
+- Si pulsas **B**, activa el modo **Pincel**. Mientras arrastras el mouse, elige un loop de pintura con uniones suavizadas. Al dejar de moverlo por **0,32 s** o soltarlo, el audio se desvanece.
 - Biblioteca incluida: **78 sonidos** (37 cortos, 16 medios, 13 largos, 12 loops de pintura), entre los cuales hay 8 favoritos del segmento **7,55–9,20 segundos** del audio original de lápiz.
-- En la ventana se puede escuchar cada muestra, elegirla individualmente o alternar automáticamente, ajustar **volumen** y **velocidad/tono** (0,70× a 1,60×), cambiar P/B manualmente y silenciar.
+- En la ventana se puede escuchar cada muestra, elegirla individualmente o alternar automáticamente, ajustar **volumen** y **velocidad/tono** (0,45× a 1,20×; **0,65× por defecto**), cambiar P/B manualmente y silenciar.
 - **Inicio automático** al entrar a Windows mediante `HKCU\...\Run` (sin administrador), activado por defecto en el `.exe`; al iniciar con Windows se abre **oculto en la bandeja**.
 - **Cerrar la ventana = minimizar a bandeja** por defecto. Clic derecho sobre el icono para abrirla o salir.
 - Ajustes locales: `%APPDATA%\KaoruInk\settings.json`.
@@ -19,6 +21,8 @@
 ### Alcance y limitaciones
 
 El ejecutable se compila para Windows en GitHub Actions; este repositorio no contiene un `.exe` previamente compilado. En Windows, algunas tabletas o lápices digitales pueden generar eventos compatibles con mouse: esta versión escucha eventos de arrastre del botón izquierdo y no identifica físicamente cada dispositivo USB. Los atajos P/B se detectan sin Ctrl/Alt/Windows; si modificaste tus atajos de Clip Studio, cambia la herramienta manualmente en la app. Si ejecutas Clip Studio con privilegios de administrador, podrías necesitar ejecutar la app con un nivel de permisos equivalente para recibir eventos de entrada. De forma predeterminada, **no** se ejecuta como administrador.
+
+En P se construye una sola muestra larga a partir de los recortes seleccionados. Su textura sostenida utiliza transiciones internas, no reproducción en bucle ni múltiples disparos por trazo; para trazos de más de 20 segundos puede agotarse el sonido. El modo B es el único que hace loop.
 
 La app solo reproduce sonido: **no dibuja en Clip Studio ni intercepta el trazo real**. La selección de modo se basa en los atajos P/B que pulsas, no en leer internamente el pincel activo desde la API de Clip Studio. El sonido es una simulación sincronizada con los movimientos del mouse, no con la presión real del pincel.
 

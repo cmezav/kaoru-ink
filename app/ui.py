@@ -132,18 +132,21 @@ class MainWindow(QMainWindow):
         self.brush_button=QPushButton('B · Pincel')
         self.brush_button.setObjectName('mode');self.brush_button.setCheckable(True)
         self.pencil_button.setChecked(True)
-        mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addStretch()
+        self.eraser_button=QPushButton('E · Borrador')
+        self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
+        mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P: un SOLO roce aislado por trazo. No se mezclan ni encadenan sonidos. B: loop limpio mientras pintas.','muted'))
+        h.addWidget(text('P · lápiz, B · pincel y E · borrador: UN sonido por trazo. Sin loops ni repeticiones, incluso al dibujar líneas largas.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('15 roces INDIVIDUALES de lápiz (sin ataques adicionales) y 4 loops limpios de pincel. Se retiraron los 12 B con ruido de grabación.','muted'))
+        samples.layout().addWidget(text('24 opciones nuevas de SFX Kit y UI SFX: P (12), B (9) y E (3). Un roce aislado y continuación continua, sin repetir audios.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
-            ('pencil','01 · P: un solo roce','Cada trazo usa una sola muestra aislada; alargas el mismo roce hasta soltar.', 'pencil_id'),
-            ('brush','02 · B: colorear en loop','Solo sonidos de la fuente limpia, sin ruido continuo de grabación.', 'brush_id')):
+            ('pencil','01 · P: lápiz','Un contacto de lápiz por trazo. La fricción continúa sin repetición.', 'pencil_id'),
+            ('brush','02 · B: pincel','Colorear con una sola reproducción, sin loop ni clics nuevos.', 'brush_id'),
+            ('eraser','03 · E: borrador','Borrar con una sola fricción, hasta soltar el mouse.', 'eraser_id')):
 
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
@@ -153,6 +156,10 @@ class MainWindow(QMainWindow):
             for sid in self.audio.by_category[category]:
                 s=self.audio.samples[sid]
                 combo.addItem(s['label']+f"  ({s['duration_sec']:.2f} s)",sid)
+            # Reject IDs from v0.3's retired audio library. Keep the user's
+            # volume/speed but select a valid sample from the new CC0 collection.
+            if self.settings.get(setting) not in ('auto',*self.audio.by_category[category]):
+                self.settings[setting]=config.DEFAULTS[setting]
             current=combo.findData(self.settings[setting]);combo.setCurrentIndex(max(0,current))
             r.addWidget(combo,1)
             preview=QPushButton('Escuchar ▶');preview.setObjectName('secondary')
@@ -173,7 +180,7 @@ class MainWindow(QMainWindow):
         self.speed_slider=QSlider(Qt.Orientation.Horizontal);self.speed_slider.setRange(45,120);self.speed_slider.setSingleStep(5);self.speed_slider.setPageStep(5);self.speed_slider.setValue(self.settings['speed'])
         speed_col.addWidget(self.speed_slider);grid.addLayout(speed_col,1)
         content.addLayout(grid)
-        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,55×. Cada muestra P se estira a un roce sostenido, sin varios rayones seguidos.','muted'))
+        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,55×. Los tres modos mantienen una sola reproducción por trazo.','muted'))
         body.addWidget(controls)
         options,option_layout=panel()
         option_layout.addWidget(text('En segundo plano','headline'))
@@ -185,7 +192,7 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.3 · Inspirado en Mechvibes · Solo Windows · El sonido requiere Clip Studio Paint en primer plano.','muted'))
+        body.addWidget(text('Kaoru Ink 0.4 · Inspirado en Mechvibes · Solo Windows · El sonido requiere Clip Studio Paint en primer plano.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
         self.vol_label.setText(f"{self.settings['volume']} %")
@@ -211,7 +218,8 @@ class MainWindow(QMainWindow):
         self.bus.tool.connect(self._set_mode)
         self.pencil_button.clicked.connect(lambda:self._set_mode('pencil'))
         self.brush_button.clicked.connect(lambda:self._set_mode('brush'))
-        for category,setting in [('pencil','pencil_id'),('brush','brush_id')]:
+        self.eraser_button.clicked.connect(lambda:self._set_mode('eraser'))
+        for category,setting in [('pencil','pencil_id'),('brush','brush_id'),('eraser','eraser_id')]:
             self.combos[category].currentIndexChanged.connect(lambda _,c=category,k=setting:self._selected(c,k))
             self.preview_buttons[category].clicked.connect(lambda _,c=category:self._preview(c))
         self.vol_slider.valueChanged.connect(self._volume)
@@ -222,8 +230,6 @@ class MainWindow(QMainWindow):
     def _selected(self,category,setting):
         self.settings[setting]=self.combos[category].currentData()
         config.save(self.settings)
-        if category == 'brush':
-            self.audio.refresh_live_loop(category,self.settings[setting])
 
     def _preview(self,category):
         name=self.audio.preview(category,self.combos[category].currentData())
@@ -236,7 +242,7 @@ class MainWindow(QMainWindow):
 
     def _speed(self,value):
         self.speed_label.setText(f'{value/100:.2f}×');self.settings['speed']=value
-        self.audio.stop_stroke();self.audio.set_speed(value);config.save(self.settings)
+        self.controller.mouse_up();self.audio.set_speed(value);config.save(self.settings)
 
     def _start_change(self,enabled):
         try:
@@ -274,6 +280,7 @@ class MainWindow(QMainWindow):
         self.controller.change_mode(mode)
         self.pencil_button.setChecked(mode=='pencil')
         self.brush_button.setChecked(mode=='brush')
+        self.eraser_button.setChecked(mode=='eraser')
         self._update_status()
 
     def _tick(self):
@@ -288,7 +295,7 @@ class MainWindow(QMainWindow):
             self.status.setText('No se pudo comprobar Clip Studio: '+str(ex))
 
     def _update_status(self):
-        mode='Lápiz (P)' if self.controller.mode=='pencil' else 'Pincel (B)'
+        mode={'pencil':'Lápiz (P)','brush':'Pincel (B)','eraser':'Borrador (E)'}[self.controller.mode]
         if self.muted: status='● Silenciado · '+mode
         elif self.focused: status='● Clip Studio Paint activo · '+mode
         else: status='○ Esperando Clip Studio Paint en primer plano'

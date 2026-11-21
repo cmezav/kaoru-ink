@@ -1,20 +1,25 @@
-﻿id,label,category,file,source,start_sec,end_sec,duration_sec,loop,favorite
-pencil_single_01,★ Un solo roce de lápiz 01,pencil,pencil_single_01.wav,pencil,7.605,7.725,9.0,False,True
-pencil_single_02,★ Un solo roce de lápiz 02,pencil,pencil_single_02.wav,pencil,7.727,7.846,9.0,False,True
-pencil_single_03,★ Un solo roce de lápiz 03,pencil,pencil_single_03.wav,pencil,7.851,7.967,9.0,False,True
-pencil_single_04,★ Un solo roce de lápiz 04,pencil,pencil_single_04.wav,pencil,7.972,8.094,9.0,False,True
-pencil_single_05,★ Un solo roce de lápiz 05,pencil,pencil_single_05.wav,pencil,8.106,8.217,9.0,False,True
-pencil_single_06,★ Un solo roce de lápiz 06,pencil,pencil_single_06.wav,pencil,8.22,8.334,9.0,False,True
-pencil_single_07,★ Un solo roce de lápiz 07,pencil,pencil_single_07.wav,pencil,8.341,8.45,9.0,False,True
-pencil_single_08,★ Un solo roce de lápiz 08,pencil,pencil_single_08.wav,pencil,8.455,8.576,9.0,False,True
-pencil_single_09,★ Un solo roce de lápiz 09,pencil,pencil_single_09.wav,pencil,8.581,8.703,9.0,False,True
-pencil_single_10,★ Un solo roce de lápiz 10,pencil,pencil_single_10.wav,pencil,8.707,8.827,9.0,False,True
-pencil_single_11,★ Un solo roce de lápiz 11,pencil,pencil_single_11.wav,pencil,8.834,8.954,9.0,False,True
-pencil_single_12,★ Un solo roce de lápiz 12,pencil,pencil_single_12.wav,pencil,8.968,9.082,9.0,False,True
-pencil_single_13,Un solo roce de lápiz 13,pencil,pencil_single_13.wav,pencil,9.09,9.213,9.0,False,False
-pencil_single_14,Un solo roce de lápiz 14,pencil,pencil_single_14.wav,pencil,9.22,9.338,9.0,False,False
-pencil_single_15,Un solo roce de lápiz 15,pencil,pencil_single_15.wav,pencil,9.347,9.471,9.0,False,False
-brush_clean_01,Pincel · roce seco 01,brush,brush_clean_01.wav,drawing,0.73,1.16,0.34401360544217685,True,False
-brush_clean_02,Pincel · roce seco 02,brush,brush_clean_02.wav,drawing,1.78,2.33,0.45,True,False
-brush_clean_03,Pincel · roce seco 03,brush,brush_clean_03.wav,drawing,2.86,3.19,0.2640136054421769,True,False
-brush_clean_04,Pincel · roce seco 04,brush,brush_clean_04.wav,drawing,3.98,4.4,0.3360090702947846,True,False
+﻿id,category,name,source,source_file,single_event_seconds,hold_seconds_at_1x,loop
+pencil_pencil_draw,pencil,Lápiz · dibujar (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pencil-draw.wav,0.48,26.0,False
+pencil_pencil_write,pencil,Lápiz · escribir (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pencil-write.wav,0.21,26.0,False
+pencil_pencil_tick,pencil,Lápiz · toque breve,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pencil-tick.wav,0.24,26.0,False
+pencil_pen_draw,pencil,Bolígrafo · línea (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pen-draw.wav,0.4,26.0,False
+pencil_pen_write,pencil,Bolígrafo · escritura (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pen-write.wav,0.35,26.0,False
+pencil_pen_tick,pencil,Bolígrafo · toque breve,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-pen-tick.wav,0.24,26.0,False
+pencil_chalk_draw,pencil,Tiza · trazo (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-chalk-draw.wav,0.42,26.0,False
+pencil_chalk_write,pencil,Tiza · escritura (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-chalk-write.wav,0.19,26.0,False
+pencil_chalk_tick,pencil,Tiza · toque breve,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-chalk-tick.wav,0.24,26.0,False
+brush_marker_draw,brush,Marcador · dibujar (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-marker-draw.wav,0.49,26.0,False
+brush_marker_write,brush,Marcador · escritura (roce aislado),SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-marker-write.wav,0.27,26.0,False
+brush_marker_tick,brush,Marcador · toque breve,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-marker-tick.wav,0.24,26.0,False
+brush_highlighter,brush,Resaltador · pasada suave,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-highlighter.wav,0.38,26.0,False
+eraser_eraser,eraser,Goma de borrar · roce aislado,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-eraser.wav,0.19,26.0,False
+eraser_wipe,eraser,Borrador de pizarra · pasada,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-wipe.wav,0.37,26.0,False
+eraser_scribble,eraser,Borrado a lápiz · roce rápido,SFX Kit,sfx-kit-main/sounds/writing-and-drawing/writing-scribble.wav,0.35,26.0,False
+brush_paper_slide,brush,Pincel · roce de papel (alternativo),SFX Kit,sfx-kit-main/sounds/foley/foley-paper-slide.wav,0.4,26.0,False
+brush_fabric_slide,brush,Pincel · roce de tela (alternativo),SFX Kit,sfx-kit-main/sounds/foley/foley-fabric-slide.wav,0.37,26.0,False
+pencil_organic_drag,pencil,Orgánico · inicio de arrastre (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/organic/drag-start.ogg,0.32,26.0,False
+pencil_zen_drag,pencil,Zen · arrastre suave (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/zen/drag-start.ogg,0.25,26.0,False
+pencil_studio_drag,pencil,Studio · arrastre (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/studio/drag-start.ogg,0.27,26.0,False
+brush_organic_swipe,brush,Orgánico · pincel deslizante (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/organic/swipe.ogg,0.43,26.0,False
+brush_zen_swipe,brush,Zen · pincel suave (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/zen/swipe.ogg,0.31,26.0,False
+brush_studio_swipe,brush,Studio · pincel deslizante (estilizado),UI SFX,uisfx-main/packages/uisfx/sounds/studio/swipe.ogg,0.33,26.0,False

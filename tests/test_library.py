@@ -1,46 +1,43 @@
-"""Prove that the previous noisy brush library was removed."""
-import ast
-import json
-import unittest
-import wave
+"""Validate all CC0 sounds and ensure source clips cannot loop."""
+import ast,json,unittest,wave,hashlib
 from pathlib import Path
-
 ROOT=Path(__file__).resolve().parents[1]
-FOLDER=ROOT/'assets'/'sounds'
+SOUNDS=ROOT/'assets'/'sounds'
 
 class LibraryTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
-        cls.samples=json.loads((FOLDER/'library.json').read_text(encoding='utf8'))['samples']
-
-    def test_audio_files(self):
-        self.assertGreaterEqual(len(self.samples),18)
-        for s in self.samples:
-            with self.subTest(s=s['id']):
-                with wave.open(str(FOLDER/s['file']),'rb') as wav:
-                    self.assertEqual((wav.getframerate(),wav.getnchannels(),wav.getsampwidth()),(44100,1,2))
-                    self.assertGreater(wav.getnframes(),4000)
-
-    def test_single_pencil_scrape_source(self):
-        pencil=[s for s in self.samples if s['category']=='pencil']
-        self.assertGreaterEqual(len(pencil),12)
-        self.assertTrue(all(s['source']=='pencil' and not s['loop'] for s in pencil))
-        # Only a single 0.10-0.14 second source event per sample; NO multi-stroke source.
-        self.assertTrue(all(s['end_sec']-s['start_sec']<=0.14 for s in pencil))
-        self.assertTrue(any(s['favorite'] and 7.6<s['start_sec']<8 for s in pencil))
-
-    def test_no_noisy_paint_file(self):
-        brush=[s for s in self.samples if s['category']=='brush']
-        self.assertEqual(len(brush),4)
-        self.assertTrue(all(s['source']=='drawing' and s['loop'] for s in brush))
-        self.assertFalse(list(FOLDER.glob('paint_loop*')))
-        self.assertEqual(len(list(FOLDER.glob('*.wav'))),len(self.samples))
-
-    def test_sources_not_in_repo(self):
-        self.assertFalse(list(ROOT.glob('*.mp3')))
-
+    def setUpClass(cls):cls.samples=json.loads((SOUNDS/'library.json').read_text(encoding='utf8'))['samples']
+    def test_catalogue(self):
+        self.assertEqual(len(self.samples),24)
+        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':12,'brush':9,'eraser':3})
+        self.assertTrue(all(s['loop'] is False for s in self.samples))
+        self.assertEqual(len(set(s['id'] for s in self.samples)),24)
+        self.assertTrue(all(s['source'] in ('SFX Kit','UI SFX') for s in self.samples))
+    def test_all_audio_22050_mono(self):
+        for sample in self.samples:
+            for key in ('file','preview_file'):
+                p=SOUNDS/sample[key]
+                with self.subTest(name=str(p)):
+                    with wave.open(str(p),'rb') as wav:
+                        self.assertEqual((wav.getframerate(),wav.getnchannels(),wav.getsampwidth()),(22050,1,2))
+                        self.assertGreater(wav.getnframes(),3000)
+                        if key=='file':self.assertGreater(wav.getnframes()/22050,25)
+                        else:self.assertLess(wav.getnframes()/22050,.6)
+    def test_no_previous_audio(self):
+        actual={str(p.relative_to(SOUNDS)).replace('\\','/') for p in SOUNDS.rglob('*.wav')}
+        expected={s[key] for s in self.samples for key in ('file','preview_file')}
+        self.assertEqual(actual,expected)
+    def test_no_loop_commands(self):
+        audio=(ROOT/'app/audio.py').read_text(encoding='utf8')
+        self.assertNotIn('loops=-1',audio)
+        self.assertNotIn('start_loop',audio)
+        self.assertIn('loops=0',audio)
     def test_source_parses(self):
-        for p in (ROOT/'app').glob('*.py'):
+        for p in list((ROOT/'app').glob('*.py')) + [ROOT/'tools/import_public_sfx.py']:
             ast.parse(p.read_text(encoding='utf8'),filename=str(p))
+    def test_logo_is_original_png(self):
+        # Original uploaded blue note (unaltered, byte for byte).
+        original='cc0b3472c8832cd2cbdfe043a68812f20cd02acf224c58c0870be78e9d862778'
+        self.assertEqual(hashlib.sha256((ROOT/'assets/icon.png').read_bytes()).hexdigest(),original)
 
 if __name__=='__main__':unittest.main()

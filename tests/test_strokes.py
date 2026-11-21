@@ -1,92 +1,67 @@
-"""Test stroke semantics without requiring PySide6 on a Linux build host."""
-import ast
-import math
-import time
-import unittest
+"""Verify every mouse drag fires exactly one event for P/B/E."""
+import ast,math,time,unittest
 from pathlib import Path
-
-SRC = Path(__file__).resolve().parents[1] / 'app' / 'input_monitor.py'
-parsed = ast.parse(SRC.read_text(encoding='utf8'), filename=str(SRC))
-controller_ast = next(node for node in parsed.body
-                      if isinstance(node, ast.ClassDef) and node.name == 'StrokeController')
-namespace = {'time': time, 'hypot': math.hypot}
-exec(compile(ast.Module(body=[controller_ast], type_ignores=[]), str(SRC), 'exec'), namespace)
-Controller = namespace['StrokeController']
-
+SRC=Path(__file__).resolve().parents[1]/'app'/'input_monitor.py'
+parsed=ast.parse(SRC.read_text(encoding='utf8'),filename=str(SRC))
+cls=next(n for n in parsed.body if isinstance(n,ast.ClassDef) and n.name=='StrokeController')
+ns={'time':time,'hypot':math.hypot}
+exec(compile(ast.Module(body=[cls],type_ignores=[]),str(SRC),'exec'),ns)
+StrokeController=ns['StrokeController']
 
 class FakeAudio:
-    def __init__(self):
-        self.pencil_starts = 0
-        self.loops = []
-        self.stops = 0
-        self.brush_stops = 0
-
-    def start_pencil(self, *args):
-        self.pencil_starts += 1
-
-    def start_loop(self, category, desired):
-        self.loops.append(category)
-
-    def stop_stroke(self):
-        self.stops += 1
-
-    def stop_brush(self):
-        self.brush_stops += 1
-
-    def stop_all(self):
-        self.stops += 1
-
+    def __init__(self):self.begins=[];self.stops=0;self.motion=[]
+    def begin_stroke(self,*args):self.begins.append(args);return True
+    def stop_stroke(self,*args):self.stops+=1
+    def update_motion(self,value):self.motion.append(value)
+    def stop_all(self):self.stops+=1
 
 class StrokeTests(unittest.TestCase):
     def setUp(self):
-        self.audio = FakeAudio()
-        self.settings = {'pencil_id':'pencil_single_03', 'brush_id':'auto'}
-        self.controller = Controller(self.audio, self.settings)
+        self.audio=FakeAudio()
+        self.settings={'pencil_id':'pencil_pencil_draw','brush_id':'brush_marker_draw','eraser_id':'eraser_eraser'}
+        self.c=StrokeController(self.audio,self.settings)
 
-    def test_pencil_only_one_play_even_for_very_long_stroke(self):
-        c = self.controller
-        c.mouse_down(100, 100)
-        for x in range(110, 3000, 10):
-            c.mouse_move(x, 100)
-        self.assertEqual(self.audio.pencil_starts, 1)
-        self.assertEqual(self.audio.loops, [])
-        c.mouse_up()
-        c.mouse_down(100, 100)
-        c.mouse_move(125, 100)
-        self.assertEqual(self.audio.pencil_starts, 2)
+    def test_one_sound_per_stroke_in_every_mode_even_when_very_long(self):
+        for mode in ('pencil','brush','eraser'):
+            self.c.change_mode(mode)
+            self.c.mouse_down(0,0)
+            for x in range(1,4500,5):self.c.mouse_move(x,0)
+            self.assertEqual(len([x for x in self.audio.begins if x[0]==mode]),1)
+            self.c.mouse_up()
+        self.assertEqual(len(self.audio.begins),3)
 
-    def test_pencil_paused_does_not_play_second_sound(self):
-        c = self.controller
-        c.mouse_down(0, 0)
-        c.mouse_move(100, 0)
-        c.last_motion = time.monotonic() - .5
-        c.tick(True)
-        c.mouse_move(200, 0)
-        self.assertEqual(self.audio.pencil_starts, 1)
-        self.assertEqual(self.audio.loops, [])
+    def test_pause_does_not_start_again_even_after_resume(self):
+        for mode in ('pencil','brush','eraser'):
+            self.c.change_mode(mode)
+            self.c.mouse_down(0,0)
+            self.c.mouse_move(70,0)
+            self.c.last_motion=time.monotonic()-.5
+            self.c.tick(True)
+            self.c.mouse_move(140,0)
+            self.c.mouse_up()
+        self.assertEqual(len(self.audio.begins),3)
+        self.assertTrue(any(m==0 for m in self.audio.motion))
 
-    def test_brush_is_the_only_mode_that_loops(self):
-        c = self.controller
-        c.change_mode('brush')
-        c.mouse_down(0, 0)
-        for x in range(10, 100, 10):
-            c.mouse_move(x, 0)
-        self.assertEqual(self.audio.loops, ['brush'])
-        c.last_motion = time.monotonic() - .5
-        c.tick(True)
-        self.assertEqual(self.audio.brush_stops, 1)
-        c.mouse_move(150, 0)
-        self.assertEqual(self.audio.loops, ['brush', 'brush'])
+    def test_click_without_drag_silent(self):
+        self.c.mouse_down(20,20)
+        self.c.mouse_up()
+        self.assertEqual(self.audio.begins,[])
 
-    def test_sound_resets_on_focus_loss(self):
-        c = self.controller
-        c.mouse_down(0, 0)
-        c.mouse_move(30, 0)
-        c.tick(False)
-        c.mouse_move(40, 0)
-        self.assertEqual(self.audio.pencil_starts, 1)
-        self.assertFalse(c.active)
+    def test_focus_loss_stops_and_does_not_restart(self):
+        self.c.mouse_down(0,0)
+        self.c.mouse_move(15,0)
+        self.c.tick(False)
+        self.c.mouse_move(50,0)
+        self.assertEqual(len(self.audio.begins),1)
+        self.assertFalse(self.c.active)
 
+    def test_new_drag_restarts_once(self):
+        for i in range(2):
+            self.c.mouse_down(0,0);self.c.mouse_move(40,0);self.c.mouse_up()
+        self.assertEqual(len(self.audio.begins),2)
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_keyboard_shortcuts_include_e(self):
+        tree=ast.parse(SRC.read_text(encoding='utf8'))
+        self.assertIn("'e':'eraser'",SRC.read_text(encoding='utf8'))
+
+if __name__=='__main__':unittest.main()

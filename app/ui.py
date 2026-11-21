@@ -140,23 +140,23 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(text('Herramienta activa:'))
         self.pencil_button=QPushButton('P · Lápiz')
         self.pencil_button.setObjectName('mode');self.pencil_button.setCheckable(True)
-        self.brush_button=QPushButton('B · Pincel')
+        self.brush_button=QPushButton('B / J · Pintura')
         self.brush_button.setObjectName('mode');self.brush_button.setCheckable(True)
         self.pencil_button.setChecked(True)
         self.eraser_button=QPushButton('E · Borrador')
         self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P y E: un solo audio real por trazo, sin bucle ni fricción artificial. Si acaba antes, no se reinicia. B: bucle suave al colorear.','muted'))
+        h.addWidget(text('P: un audio de 5–8 s por trazo (sin bucle). E: un audio breve de borrador (sin bucle). B o J: mismo pincel, bucle suave solo al pintar.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('24 muestras: P (12), B (9) y E (3). El bucle solo está permitido en B y su volumen sigue el movimiento del cursor.','muted'))
+        samples.layout().addWidget(text('17 muestras seleccionadas de sounds.zip: P (11), B/J (4) y E (2). Los tres modos varían automáticamente. P prioriza audios largos.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
             ('pencil','01 · P: lápiz','Un sonido real una sola vez. Sin repetir ni generar fricción artificial.', 'pencil_id'),
-            ('brush','02 · B: pincel','Bucle suave solo mientras mueves el mouse al pintar.', 'brush_id'),
+            ('brush','02 · B/J: pincel','B y J comparten sonidos. Bucle suave solo al pintar y mover el lápiz.', 'brush_id'),
             ('eraser','03 · E: borrador','Un sonido real por trazo. Sin repetirlo ni prolongarlo artificialmente.', 'eraser_id')):
 
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
         self.original_tone_buttons={}
         labels={
             'pencil':'P · Lápiz / Sketch',
-            'brush':'B · Pintar / Colorear',
+            'brush':'B/J · Pintar / Colorear',
             'eraser':'E · Borrador',
         }
         specs=[('volume','Volumen',0,100),('speed','Velocidad',45,120),
@@ -356,7 +356,7 @@ class MainWindow(QMainWindow):
             self.status.setText('No se pudo comprobar Clip Studio: '+str(ex))
 
     def _update_status(self):
-        mode={'pencil':'Lápiz (P)','brush':'Pincel (B)','eraser':'Borrador (E)'}[self.controller.mode]
+        mode={'pencil':'Lápiz (P)','brush':'Pincel (B/J)','eraser':'Borrador (E)'}[self.controller.mode]
         if self.muted: status='● Silenciado · '+mode
         elif self.focused: status='● Clip Studio Paint activo · '+mode
         else: status='○ Esperando Clip Studio Paint en primer plano'

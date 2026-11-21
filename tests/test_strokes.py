@@ -63,5 +63,6 @@ class StrokeTests(unittest.TestCase):
     def test_keyboard_shortcuts_include_e(self):
         tree=ast.parse(SRC.read_text(encoding='utf8'))
         self.assertIn("'e':'eraser'",SRC.read_text(encoding='utf8'))
+        self.assertIn("'j':'brush'",SRC.read_text(encoding='utf8'))
 
 if __name__=='__main__':unittest.main()

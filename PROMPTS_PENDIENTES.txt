@@ -1,0 +1,16 @@
+PROMPTS CORTOS PARA REGENERAR (ElevenLabs, duración manual)
+
+E05: 356 caracteres
+Generate exactly 5 seconds of clean close-miked ASMR: one rubber stylus eraser gliding forward across a matte tablet. One soft, even, velvety friction whisper audible throughout all 5 seconds with constant contact. One start, one release. No gaps, back-and-forth rubbing, separate strokes, rhythmic pulses, clicks, music, room noise or hiss. Natural pitch.
+
+E07: 391 caracteres
+Generate exactly 7 seconds of a single continuous rubber eraser glide on a matte drawing tablet. The tip never lifts, stops or reverses. Soft, muffled, steady friction stays audible from 0 to 7 seconds with one start and one gentle lift. No scrubbing motions, repeated scratching bursts, pauses, silent patches, clicking, background hiss or music. Clean close-miked recording, natural pitch.
+
+B07: 345 caracteres
+Generate exactly 7 seconds of clean, soft digital stylus coloring on a matte tablet. Continuous silky brushing with even loudness for all 7 seconds, suitable for seamless looping. Smooth flowing texture, no distinct attacks, rhythmic scratching, stop-start motions, silence, taps, sharp squeaks, static, voices or background hiss. Natural pitch.
+
+P10: 349 caracteres
+Generate exactly 10 seconds of one fine stylus tip gliding steadily forward on a matte drawing tablet. One uninterrupted delicate friction whisper, continuously audible for all 10 seconds with one contact and one final lift. No pauses, pen lifts, rhythmic scratches, repeated movements, shading, coloring, buzzing, music or room hiss. Natural pitch.
+
+
+E05 y E07: PRIORIDAD. B07 y P10: opcionales.

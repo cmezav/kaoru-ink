@@ -12,9 +12,9 @@ DEFAULTS={
     'close_to_tray':True,
     'volume':76,  # overall safety volume; each tool has independent controls
     'per_tool_controls_v1':True,
-    'pencil_id':'pencil_pencil_draw',
-    'brush_id':'brush_marker_draw',
-    'eraser_id':'eraser_eraser',
+    'pencil_id':'auto',
+    'brush_id':'auto',
+    'eraser_id':'auto',
 }
 for mode in MODES:
     for param,(_,_,initial) in PARAMETERS.items():
@@ -61,7 +61,14 @@ def load():
                 settings[f'{mode}_{param}']=value
     settings['natural_original_v07_1']=True
     settings['per_tool_controls_v1']=True
-    if requires_reset or (saved and saved.get('per_tool_controls_v1') is not True):
+    # One-time switch to the new hand-curated ElevenLabs library.
+    # Keep individual mixer settings; retire selections from the old library.
+    needs_auto = saved.get('curated_auto_v08') is not True
+    if needs_auto:
+        for mode in MODES:
+            settings[f'{mode}_id']='auto'
+    settings['curated_auto_v08']=True
+    if requires_reset or needs_auto or (saved and saved.get('per_tool_controls_v1') is not True):
         save(settings)
     return settings
 

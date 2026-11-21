@@ -1,23 +1,23 @@
-# Kaoru Ink — recuperación de audio natural (v0.7.1)
+# Kaoru Ink v0.8 — sonidos naturales seleccionados
 
-**Esta revisión sustituye el parche v0.7 antes de instalarlo.** No contiene EXE ni inicia compilaciones.
+App de Windows para Clip Studio Paint, inspirada en Mechvibes y enfocada en el sonido del lápiz digital. Con la ventana de Clip Studio Paint al frente:
 
-## Qué se corrige
+- **P:** una grabación de trazo real por arrastre, nunca repetida ni sintetizada. En selección automática rota entre **5 muestras de 5–8 segundos**, evitando que dos trazos seguidos tengan el mismo sonido. Hay también 6 muestras cortas seleccionables manualmente.
+- **B y J:** activan el **mismo modo pintura**, con **4 muestras** de 5–6 segundos disponibles en variación automática. Solo pintura tiene bucle, cuyo volumen sigue el movimiento; baja al parar y se desvanece al levantar el stylus.
+- **E:** borrador con **2 muestras** de 0,7 y 2,0 segundos, alternadas automáticamente. Sin bucle.
+- Los tres selectores comienzan en **Variar automáticamente** tras la actualización. El programa conserva los deslizadores independientes de volumen, tono, agudos, velocidad y dinámica de P/B-J/E. Los atajos solo se reconocen con Clip Studio Paint en primer plano.
+- La rueda del mouse no cambia el sonido elegido. Se puede minimizar a la bandeja e iniciar con Windows.
 
-- Elimina por completo la síntesis granular de 120 segundos y los fragmentos superpuestos que provocaron el sonido artificial de la demo de 7 segundos.
-- **P y E:** reproducen un WAV original una sola vez, con su tono natural y sin bucle, ruido añadido ni reinicios en un mismo arrastre. Al soltar el mouse, se desvanece el sonido si aún está sonando.
-- **B:** único modo con bucle mientras coloreas. El volumen sigue el movimiento y baja al detenerte.
-- Preserva los 24 WAV originales y el logo PNG exacto.
-- Mantiene **controles independientes** de volumen, velocidad, tono, brillo y sensibilidad para P, B y E.
-- Primera ejecución: restaura los ajustes de velocidad a 1,00×, tono a 0 y brillo a 0 para eliminar la coloración guardada de versiones anteriores. No cambia las opciones ni volúmenes por herramienta.
-- Bloqueo de rueda del mouse sobre selectores.
+**Limitación:** si dibujas con P más de 8 segundos o borras más de 2,0 segundos, la pista puede terminar antes que el gesto: no inventamos fricción ni repetimos un archivo para disimularlo. Necesitamos **nuevas grabaciones realmente continuas** para esos casos.
 
-### Límite físico importante
+## Qué se revisó
 
-Los WAV de lápiz/bolígrafo incluidos duran entre 0,24 y 1,45 segundos. Sin repetir material, sintetizar sonidos ni ralentizar artificialmente los archivos, **no es posible reproducir una fricción natural continua de 7 segundos a partir de estas muestras**. Esta revisión prioriza fidelidad: la muestra acaba cuando acaba, aunque el trazo siga. Para acompañar trazos largos y mantener el sonido natural deben incorporarse grabaciones reales más largas de un único roce; eso no está resuelto con estos ZIP.
+De `sounds.zip`: 29 WAV, 1 MP3 (versión anterior descartada), y 1 ZIP interno que contiene duplicados. Se aprobaron técnicamente 17 WAV: 11 de lápiz, 4 de pintura y 2 de borrado. Se descartó el lápiz de 20 segundos por pausas y los borrados largos con varios ataques/silencios. Consulta `REVISION_SONIDOS.csv` para el estado por archivo y `escuchar-curados.html` para escucharlos.
 
-## Archivos
+### Construcción del ejecutable
 
-Este parche modifica únicamente `app/audio.py`, `app/config.py`, `app/ui.py`, `tests/test_audio_playback.py`, `tests/test_library.py`, `tests/test_ui_features.py` y `README.md`.
+Al subir los cambios a la rama main, GitHub Actions compila en Windows. El artifact se llama `KaoruInk-Windows`. La aplicación instalada solo se reemplaza cuando el build termina correctamente. En la carpeta `assets/sounds/curated/` están los 17 WAV; el catálogo está en `assets/sounds/library.json`.
 
-No se modifican icono, sonidos, sistema de entrada, detección de Clip Studio, ni empaquetado de Windows. Esta entrega no compiló ni descargó ejecutables.
+## Avisos
+
+La variación automática selecciona **una pista por trazo**; no mezcla varias a la vez. Los controles al 100 % de velocidad y 0 de tono mantienen el tono natural. Wintab es experimental: si no hay presión real, la app estima la intensidad a partir de la velocidad del cursor. Consulta `ASSETS_NOTICE.md` para derechos de audio y el logo original.

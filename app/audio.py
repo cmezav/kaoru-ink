@@ -96,9 +96,17 @@ class AudioEngine:
 
     def select(self,category,desired):
         choices=self.by_category[category]
-        if desired in choices:return desired
+        if desired in choices:
+            return desired
+        # Automatic variation happens ONCE at the start of each drag.
+        # Do not repeat the last sample on consecutive strokes.
+        # For P, prefer genuine long recordings: choosing a 0.5 s sample
+        # at the beginning of a long stroke would cut out almost immediately.
+        pool=[ident for ident in choices if self.samples[ident].get('auto_eligible',True)]
+        if not pool:
+            pool=choices
         previous=self.last_random.get(category)
-        ident=random.choice([x for x in choices if x!=previous] or choices)
+        ident=random.choice([x for x in pool if x!=previous] or pool)
         self.last_random[category]=ident
         return ident
 
@@ -131,8 +139,9 @@ class AudioEngine:
         if self.muted or self.active_mode is not None or category not in self.MODES:return False
         ident=self.select(category,desired)
         ch=self.channels[category]
-        # P/E: exactly one stream. B: one uninterrupted looping texture; no
-        # individual brushes triggered on mouse movement.
+        # P/E: exactly one unmodified-pitch source per drag, never repeated.
+        # B and J share brush mode: one smooth looping texture motion-gated
+        # by the actual mouse movement, without new attacks on each motion.
         ch.play(self._sound(ident,'loop' if category=='brush' else 'held'),
                 loops=(-1 if category=='brush' else 0),fade_ms=30)
         self.active_mode=category

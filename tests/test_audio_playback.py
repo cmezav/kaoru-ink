@@ -34,16 +34,16 @@ class AudioPlaybackTests(unittest.TestCase):
             self.assertEqual(tuple(self.engine.effects[mode][p] for p in ('speed','pitch','brightness')),(100,0,0))
 
     def test_preview_uses_raw_original_pcm_at_neutral_settings(self):
-        for mode,ident in [('pencil','pencil_pencil_draw'),('brush','brush_marker_draw'),('eraser','eraser_eraser')]:
-            pcm=self.engine._load_pcm('original/'+ident+'.wav')
+        for mode,ident in [('pencil','pencil_long_08a'),('brush','brush_soft_05b'),('eraser','eraser_medium_25')]:
+            pcm=self.engine._load_pcm('curated/'+ident+'.wav')
             self.assertTrue(np.array_equal(pcm,_pitch_and_speed(pcm,100,0,0)))
             self.assertEqual(self.engine._sound(ident,'preview'),len(pcm)*2)
             self.engine.preview(mode,ident)
         self.assertTrue(all(p['loops']==0 for p in self.mixer.channels[3].plays))
 
     def test_pencil_and_eraser_play_one_unmodified_original_without_loop(self):
-        for mode,ident in [('pencil','pencil_pencil_draw'),('eraser','eraser_eraser')]:
-            pcm=self.engine._load_pcm('original/'+ident+'.wav')
+        for mode,ident in [('pencil','pencil_long_08a'),('eraser','eraser_medium_25')]:
+            pcm=self.engine._load_pcm('curated/'+ident+'.wav')
             self.assertTrue(self.engine.begin_stroke(mode,ident))
             ch=self.engine.channels[mode]
             self.assertEqual(ch.plays[-1]['loops'],0)
@@ -55,13 +55,13 @@ class AudioPlaybackTests(unittest.TestCase):
             self.engine.stop_stroke()
 
     def test_no_artificial_120_second_extension(self):
-        pcm=self.engine._load_pcm('original/pencil_pencil_draw.wav')
-        self.assertEqual(self.engine._sound('pencil_pencil_draw','held'),len(pcm)*2)
-        self.assertLess(self.engine._sound('pencil_pencil_draw','held'),44100*2*2)
+        pcm=self.engine._load_pcm('curated/pencil_long_08a.wav')
+        self.assertEqual(self.engine._sound('pencil_long_08a','held'),len(pcm)*2)
+        self.assertLess(self.engine._sound('pencil_long_08a','held'),44100*2*9)
         self.assertNotIn('_continuous_friction',Path(__file__).resolve().parents[1].joinpath('app','audio.py').read_text())
 
     def test_paint_mode_is_only_looping_mode(self):
-        self.engine.begin_stroke('brush','brush_marker_draw')
+        self.engine.begin_stroke('brush','brush_soft_05b')
         ch=self.engine.channels['brush']
         self.assertEqual(ch.plays[-1]['loops'],-1)
         for _ in range(10):self.engine.update_motion(100)
@@ -83,7 +83,7 @@ class AudioPlaybackTests(unittest.TestCase):
         self.assertEqual(self.engine.effects['pencil'],{'volume':39,'speed':90,'pitch':4,'brightness':20,'dynamics':95})
 
     def test_dynamic_strength_changes_level_without_new_play(self):
-        self.engine.begin_stroke('pencil','pencil_pencil_draw')
+        self.engine.begin_stroke('pencil','pencil_long_08a')
         self.engine.update_motion(130)
         ch=self.engine.channels['pencil']
         self.engine.set_pressure(.04,True);soft=ch.level
@@ -91,8 +91,21 @@ class AudioPlaybackTests(unittest.TestCase):
         self.assertGreater(strong,soft*1.7)
         self.assertEqual(len(ch.plays),1)
 
+    def test_auto_variation_uses_curated_long_P_and_avoids_repeat(self):
+        last=None
+        for i in range(25):
+            ident=self.engine.select('pencil','auto')
+            self.assertTrue(self.engine.samples[ident]['auto_eligible'])
+            self.assertGreaterEqual(self.engine.samples[ident]['duration_sec'],4.8)
+            if last is not None:self.assertNotEqual(ident,last)
+            last=ident
+        for mode in ('brush','eraser'):
+            x=self.engine.select(mode,'auto')
+            y=self.engine.select(mode,'auto')
+            self.assertNotEqual(x,y)
+
     def test_no_pitch_processing_when_neutral_and_b_loop_seam(self):
-        a=self.engine._load_pcm('original/brush_marker_draw.wav')
+        a=self.engine._load_pcm('curated/brush_soft_05b.wav')
         self.assertTrue(np.array_equal(a,_pitch_and_speed(a,100,0,0)))
         loop=_brush_loop(a)
         self.assertLess(abs(int(loop[-1])-int(loop[0])),1500)

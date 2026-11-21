@@ -63,7 +63,7 @@ class MouseKeyboardMonitor:
         if self.mods:return
         try:ch=key.char.lower()
         except (AttributeError,TypeError):return
-        mapping={'p':'pencil','b':'brush','e':'eraser'}
+        mapping={'p':'pencil','b':'brush','j':'brush','e':'eraser'}
         if ch in mapping and foreground_paint():
             self.bus.tool.emit(mapping[ch])
 

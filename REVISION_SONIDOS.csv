@@ -1,0 +1,30 @@
+﻿archivo,modo,duracion_s,decision,razon,fluctuaciones,pausas,id_nuevo
+Generate_exactly_0.5_#1-1795282297064.wav,P,0.4865,APROBADO,Sin huecos grandes detectados,1,[],pencil_tap_05a
+Generate_exactly_0.5_#3-1795283396744.wav,P,0.4865,APROBADO,Sin huecos grandes detectados,1,[],pencil_tap_05b
+Generate_exactly_0.7_#1-1795287191817.wav,E,0.6865,APROBADO,Sin huecos grandes detectados,1,[],eraser_short_07
+Generate_exactly_1.5_#3-1795282333733.wav,P,1.48,APROBADO,Sin huecos grandes detectados,1,[],pencil_short_15a
+Generate_exactly_1.5_#4-1795283422001.wav,P,1.48,APROBADO,Sin huecos grandes detectados,1,[],pencil_short_15b
+Generate_exactly_2.5_#1-1795287217308.wav,E,2.48,APROBADO,"Recortado a 1,98 s, antes de una pausa interna y nuevo ataque en el original",4,"[[2.0, 2.38]]",eraser_medium_25
+Generate_exactly_20__#1-1795282791690.wav,P,20.0,DESCARTADO,"Pausas internas [[8.22, 9.34], [15.2, 16.42], [19.64, 19.9]]",9,"[[8.22, 9.34], [15.2, 16.42], [19.64, 19.9]]",
+Generate_exactly_3_s_#2-1795282539324.wav,P,3.0,DESCARTADO,Versión antigua de 3/8 s previamente cuestionada,2,[],
+Generate_exactly_3_s_#2-1795283467640.wav,P,3.0,APROBADO,Sin huecos grandes detectados,2,[],pencil_medium_03a
+Generate_exactly_3_s_#4-1795283467644.wav,P,3.0,APROBADO,Sin huecos grandes detectados,2,[],pencil_medium_03b
+Generate_exactly_5_s_#1-1795286920668.wav,B,5.0,APROBADO,Sin huecos grandes detectados,5,[],brush_soft_05a
+Generate_exactly_5_s_#2-1795286920670.wav,B,5.0,APROBADO,Sin huecos grandes detectados,4,[],brush_soft_05b
+Generate_exactly_5_s_#4-1795283510572.wav,P,5.0,APROBADO,Sin huecos grandes detectados,2,[],pencil_long_05a
+Generate_exactly_5_s_#4-1795287253233.wav,E,5.0,DESCARTADO,Varias oscilaciones/ataques (semejan nuevos trazos),8,[],
+Generate_exactly_6_s_#1-1795286964167.wav,B,6.0,DESCARTADO,Varias oscilaciones/ataques (semejan nuevos trazos),10,[],
+Generate_exactly_6_s_#2-1795286964168.wav,B,6.0,APROBADO,Sin huecos grandes detectados,4,[],brush_smooth_06a
+Generate_exactly_6_s_#4-1795286964171.wav,B,6.0,APROBADO,Sin huecos grandes detectados,5,[],brush_smooth_06b
+Generate_exactly_7_s_#1-1795283559979.wav,P,7.0,DESCARTADO,Versión antigua de 3/8 s previamente cuestionada,4,[],
+Generate_exactly_7_s_#2-1795283559980.wav,P,7.0,APROBADO,Sin huecos grandes detectados,4,[],pencil_long_07a
+Generate_exactly_7_s_#2-1795287002819.wav,B,7.0,DESCARTADO,Varias oscilaciones/ataques (semejan nuevos trazos),12,[],
+Generate_exactly_7_s_#3-1795287002820.wav,B,7.0,DESCARTADO,Varias oscilaciones/ataques (semejan nuevos trazos),13,[],
+Generate_exactly_7_s_#4-1795283559984.wav,P,7.0,APROBADO,Sin huecos grandes detectados,4,[],pencil_long_07b
+Generate_exactly_8_s_#1-1795282584434.wav,P,8.0,DESCARTADO,"Pausas internas [[7.64, 7.9]]",3,"[[7.64, 7.9]]",
+Generate_exactly_8_s_#1-1795283618105.wav,P,8.0,APROBADO,Sin huecos grandes detectados,2,[],pencil_long_08a
+Generate_exactly_8_s_#1-1795287142498.wav,E,8.0,DESCARTADO,Varias oscilaciones/ataques (semejan nuevos trazos),11,[],
+Generate_exactly_8_s_#2-1795283618107.wav,P,8.0,APROBADO,Sin huecos grandes detectados,3,[],pencil_long_08b
+Generate_exactly_8_s_#2-1795287142501.wav,E,8.0,DESCARTADO,"Pausas internas [[0.6, 0.92], [1.62, 2.0], [2.7, 2.98], [3.68, 4.0], [4.72, 5.0], [5.78, 6.14]]",8,"[[0.6, 0.92], [1.62, 2.0], [2.7, 2.98], [3.68, 4.0], [4.72, 5.0], [5.78, 6.14]]",
+Generate_exactly_8_s_#2-1795287284148.wav,E,8.0,DESCARTADO,"Pausas internas [[7.36, 7.9]]",12,"[[7.36, 7.9]]",
+Generate_exactly_8_s_#4-1795287142507.wav,E,8.0,DESCARTADO,"Pausas internas [[4.18, 4.5]]",7,"[[4.18, 4.5]]",

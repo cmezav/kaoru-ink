@@ -1,14 +1,7 @@
-# Audio y licencias de Kaoru Ink v0.6 — grabaciones naturales
+# Audio y derechos de Kaoru Ink v0.8
 
-Se utilizaron exclusivamente los dos ZIP aportados por la usuaria:
+La biblioteca activa contiene 17 fragmentos procedentes de `sounds.zip` aportado por la persona usuaria y generado con ElevenLabs. Los WAV fueron revisados técnicamente para excluir pausas internas, segmentos rítmicos y duplicados. La selección es preliminar y requiere escucha subjetiva antes de una publicación final.
 
-- **SFX Kit (Wyzowl):** 16 grabaciones de escritura/dibujo y 2 de roce de materiales. Licencia **CC0** según la documentación del paquete. Copia en `assets/licenses/SFX-KIT-CC0.txt`.
-- **UI SFX (Yuki Capital):** 6 grabaciones de arrastre y deslizamiento (algunas estilizadas). Licencia de audio **CC0 1.0**. Copia en `assets/licenses/UISFX-LICENSE-AUDIO.txt`.
+Se respetó el **tono y la velocidad originales**. La única conversión fue de 48 kHz estéreo a 44,1 kHz mono (para el mixer Windows), con ganancia fija limitada por muestra para audibilidad y fundidos de solo 6 ms para evitar clics. **No** se aplicó cambio de tono, compresión dinámica, alargamiento ni prolongación sintética.
 
-**A diferencia de v0.4/v0.5, NO se genera ruido sintético de 26 segundos.** Las pistas son el audio original en su duración original, convertido de 48 kHz a PCM mono 44,1 kHz (16 bits) para el mezclador. No se aplica ajuste de tono, velocidad, compresión, filtrado, ecualización ni normalización. La mezcla estéreo se convierte a mono cuando aplica.
-
-La velocidad por defecto de reproducción es **1,00×**, tono **0 semitonos** y brillo **0**. Al actualizar, una migración de configuración corrige automáticamente las antiguas preferencias de sonido de 0,55×; los demás ajustes se conservan.
-
-P y E reproducen una sola vez la grabación seleccionada y no la repiten. Debido a la duración real de los clips (alrededor de 0,24–1,45 s), no pueden cubrir un trazo más largo sin recurrir a loops o síntesis; preferimos admitir esa limitación antes que deformar su sonido. B utiliza un loop con una unión suavizada mientras haya movimiento real de cursor.
-
-El logo original `assets/icon.png` no fue modificado. `assets/icon.ico` es su conversión técnica para Windows.
+La licencia MIT del código no significa que los WAV sean MIT. Antes de distribuirlos públicamente comprueba los términos de tu cuenta y de las generaciones de ElevenLabs, y conserva las evidencias de autoría / permisos que correspondan. Los archivos de audio de UI SFX y SFX Kit de versiones anteriores ya no se usan en esta compilación. El PNG del logo original no se modificó.

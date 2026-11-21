@@ -1,0 +1,21 @@
+﻿origen,archivo_original,id_en_app,categoria,duracion_s,seleccion,favorito_intocable,asignacion_direccional,observaciones,ganancia_lineal,sha256_original
+sounds2,Generate_exactly_1.5_#1-1795290598880.wav,brush_velvet_fav_15_01,brush,1.48,AUTO,SI,horizontal,"Favorito 1/4 · terciopelo 1,5 s",1.557,33a17c1d51ee876ff80554100a2762990ae93c3b6627575d01f6c46693122196
+sounds2,Generate_exactly_1.5_#2-1795290598882.wav,brush_velvet_fav_15_02,brush,1.48,AUTO,SI,horizontal,"Favorito 2/4 · terciopelo 1,5 s",1.329,9d79a237b8876df8d3c061a63bc7acfe465489b5599b67c25932ef1b13e24e0c
+sounds2,Generate_exactly_1.5_#3-1795290598882.wav,brush_velvet_fav_15_03,brush,1.48,AUTO,SI,vertical,"Favorito 3/4 · terciopelo 1,5 s",1.202,478cf715fae0930fd1d66c0afc883ba6ccfd55af5ad046104d2743a6664f895d
+sounds2,Generate_exactly_1.5_#4-1795290598884.wav,brush_velvet_fav_15_04,brush,1.48,AUTO,SI,vertical,"Favorito 4/4 · terciopelo 1,5 s",1.943,617a94850993dadc9c7b4dff7aa85d9f2650eb4adfb9b2785671b8c43b4f614a
+sounds2,Generate_exactly_1_s_#3-1795290574023.wav,brush_velvet_short_10,brush,1.0,MANUAL,NO,-,Roce corto suave · selección manual,1.829,8643285e6fa67ffff0b76b05b2cc1ec7acf04c45ab9ed4df299d4d65c285c120
+sounds2,Generate_exactly_0.5_#1-1795290545247.wav,brush_velvet_touch_05,brush,0.49,MANUAL,NO,-,"Contacto corto · manual, podría sonar repetido en bucle",2.162,ae578833806772f13f584f42cd66bdddb5729c2c80c59f31d4e57ef3b07e5308
+sounds2,Generate_exactly_4_s_#1-1795290468837.wav,brush_older_soft_04a,brush,4.0,MANUAL,NO,-,Candidato largo · escuchar manualmente,2.469,52bc56321f732056a2c020491c898ea46236e739b485020ae1fa17cae03a9e94
+sounds2,Generate_exactly_4_s_#2-1795290468839.wav,brush_older_soft_04b,brush,4.0,MANUAL,NO,-,Candidato largo · escuchar manualmente,2.781,0dd8a657085899ba50bf0e021a4527a340cd4140876a4ab885953e9eb35eecd9
+sounds2,Generate_exactly_0.8_#3-1795290052534.wav,eraser_soft_08,eraser,0.81,AUTO,NO,-,Borrador suave corto,3.246,fc9875e74ee11cfc8328482912bfd88c830492013c1969e295eb20e4fcd08b9e
+sounds2,Generate_exactly_3_s_#2-1795290161103.wav,pencil_soft_03,pencil,3.0,MANUAL,NO,-,Lápiz 3 s · manual por posible corte temprano,3.419,dd3e44da74da1d9148c8b92a7a6703261cad1ea0fa9d44afc75d2806cde9e734
+new,Generate_exactly_1.5_#1-1795291111496.wav,pencil_warm_15_01,pencil,1.48,MANUAL,NO,-,"Lápiz cálido 1,5 s · manual",3.674,b8ee25b687ea0760447b4e93415f7d5209fcd8b211e2b93f6d55ebda1e799662
+new,Generate_exactly_1_s_#2-1795291149732.wav,pencil_warm_10_02,pencil,1.0,MANUAL,NO,-,Lápiz cálido 1 s · manual,0.612,a471ab4d1d81dac00e475de461f838ff00a44d12067d84f5e1443d7dff0c7213
+new,Generate_exactly_1_s_#3-1795291149734.wav,pencil_warm_10_03,pencil,1.0,MANUAL,NO,-,"Lápiz cálido 1 s · manual, nivel alto original",0.335,e3ba42478d91d171cad8045e36a51fc46214bed85cf3f6b219a369529bb45e77
+new,Generate_exactly_1_s_#4-1795291149736.wav,pencil_warm_10_04,pencil,1.0,MANUAL,NO,-,Lápiz cálido 1 s · manual,0.406,a575179abf6818de449bc360abb4383e1f70cc1b8477fd33eddac642975560ef
+new,Generate_exactly_1.5_#1-1795291179384.wav,eraser_new_15_01,eraser,1.48,MANUAL,NO,-,"Borrador 1,5 s · variación más marcada, manual",1.407,711cf135cd04f36ddfc177ba2926ef843664facb420814a7055778e24dae51a2
+new,Generate_exactly_1_s_#3-1795291214853.wav,eraser_new_10_03,eraser,1.0,AUTO,NO,-,Borrador 1 s · suave,1.150,1ce7f6ea032ce6ade16e2aae211b23b83bb97fb2fe4cb5504be8a18b5ee11da6
+new,Generate_exactly_1_s_#4-1795291214854.wav,eraser_new_10_04,eraser,1.0,MANUAL,NO,-,"Borrador 1 s · más contrastado, manual",0.888,a63e0b79d5d38546d9a9c6ae8b67ced33b7f78551d6d1dbf0289d51f633d6b9a
+new,Generate_exactly_1.5_#1-1795291251227.wav,brush_new_velvet_15_01,brush,1.48,AUTO,NO,horizontal,Pintura terciopelo nueva · tonalidad algo más clara,3.398,f4f213051e89fb0b3b65a827e68a75bfc0e33fc4172e3effc9cb53989927fea3
+new,Generate_exactly_1.5_#3-1795291251231.wav,brush_new_velvet_15_03,brush,1.48,AUTO,NO,vertical,Pintura terciopelo nueva · tonalidad algo más clara,3.958,4511ecd89414a8bdac67bdc458ea7fc10aefb93aafd6f3baf01b728df5b38395
+new,Generate_exactly_1.5_#4-1795291251232.wav,brush_new_velvet_15_04,brush,1.48,AUTO,NO,vertical,Pintura terciopelo nueva · tonalidad algo más clara,3.966,3d16a863740ddf6abbc51e8dc596e5686d2ba0d68f2d1cf59eb5b568e437c015

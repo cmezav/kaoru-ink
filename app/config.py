@@ -68,7 +68,13 @@ def load():
         for mode in MODES:
             settings[f'{mode}_id']='auto'
     settings['curated_auto_v08']=True
-    if requires_reset or needs_auto or (saved and saved.get('per_tool_controls_v1') is not True):
+    # New velvet family: make all three menus 'Variar automáticamente' once.
+    # Keep independent volume, speed, tone, brightness and dynamics as-is.
+    needs_fusion_auto=saved.get('curated_auto_v10') is not True
+    if needs_fusion_auto:
+        for mode in MODES:settings[f'{mode}_id']='auto'
+    settings['curated_auto_v10']=True
+    if requires_reset or needs_auto or needs_fusion_auto or (saved and saved.get('per_tool_controls_v1') is not True):
         save(settings)
     return settings
 

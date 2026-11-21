@@ -60,6 +60,17 @@ class StrokeTests(unittest.TestCase):
             self.c.mouse_down(0,0);self.c.mouse_move(40,0);self.c.mouse_up()
         self.assertEqual(len(self.audio.begins),2)
 
+    def test_directional_controller_tracks_xy_without_retrigger(self):
+        self.audio.direction=[]
+        self.audio.update_direction=lambda dx,dy:self.audio.direction.append((dx,dy))
+        self.c.change_mode('brush')
+        self.c.mouse_down(20,20)
+        self.c.mouse_move(35,20)
+        self.c.mouse_move(35,50)
+        self.assertEqual(len(self.audio.begins),1)
+        self.assertEqual(self.audio.direction[:2],[(15,0),(0,30)])
+        self.c.mouse_up()
+
     def test_keyboard_shortcuts_include_e(self):
         tree=ast.parse(SRC.read_text(encoding='utf8'))
         self.assertIn("'e':'eraser'",SRC.read_text(encoding='utf8'))

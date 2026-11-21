@@ -5,3 +5,7 @@ La biblioteca activa contiene 17 fragmentos procedentes de `sounds.zip` aportado
 Se respetó el **tono y la velocidad originales**. La única conversión fue de 48 kHz estéreo a 44,1 kHz mono (para el mixer Windows), con ganancia fija limitada por muestra para audibilidad y fundidos de solo 6 ms para evitar clics. **No** se aplicó cambio de tono, compresión dinámica, alargamiento ni prolongación sintética.
 
 La licencia MIT del código no significa que los WAV sean MIT. Antes de distribuirlos públicamente comprueba los términos de tu cuenta y de las generaciones de ElevenLabs, y conserva las evidencias de autoría / permisos que correspondan. Los archivos de audio de UI SFX y SFX Kit de versiones anteriores ya no se usan en esta compilación. El PNG del logo original no se modificó.
+
+## Biblioteca fusionada v0.10
+
+Las 20 nuevas muestras fueron proporcionadas por la persona usuaria desde ElevenLabs. El catálogo conserva el nombre de origen de cada una; no implican licencia de redistribución pública automática. Las versiones importadas solo han recibido conversión a mono/44,1 kHz, ganancia de nivel y, para P/E, un fundido breve al final. No se aplicaron cambios de tono, estiramiento ni generación sintética.

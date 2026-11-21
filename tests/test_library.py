@@ -8,9 +8,9 @@ class LibraryTests(unittest.TestCase):
     def setUpClass(cls):
         cls.samples=json.loads((SOUNDS/'library.json').read_text(encoding='utf8'))['samples']
     def test_catalogue(self):
-        self.assertEqual(len(self.samples),17)
-        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':11,'brush':4,'eraser':2})
-        self.assertEqual(len({s['id'] for s in self.samples}),17)
+        self.assertEqual(len(self.samples),37)
+        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':16,'brush':15,'eraser':6})
+        self.assertEqual(len({s['id'] for s in self.samples}),37)
         self.assertTrue(all(s['source']=='ElevenLabs (usuario)' for s in self.samples))
         self.assertTrue(all(s['kind']=='curated_real_recording_no_stretch' for s in self.samples))
         self.assertTrue(all(s['preview_file']==s['file'] for s in self.samples))
@@ -28,6 +28,15 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(len(auto),5)
         self.assertTrue(all(s['duration_sec']>=4.8 for s in auto))
         self.assertTrue(all(s['loop']==(s['category']=='brush') for s in self.samples))
+    def test_four_favorites_are_retained_and_in_automatic_directional_mode(self):
+        expected={f'brush_velvet_fav_15_{i:02d}' for i in range(1,5)}
+        samples={s['id']:s for s in self.samples}
+        self.assertTrue(expected.issubset(samples))
+        self.assertTrue(all(samples[s]['auto_eligible'] for s in expected))
+        self.assertEqual({samples[s]['direction'] for s in expected},{'horizontal','vertical'})
+        self.assertTrue(all(samples[s].get('favorite') for s in expected))
+        self.assertTrue(all(s.get('direction_role')=='mezcla_sonica_asignada_no_direccion_documentada' for s in self.samples if s.get('direction')))
+
     def test_only_brush_loops(self):
         src=(ROOT/'app/audio.py').read_text(encoding='utf8')
         self.assertIn("loops=(-1 if category=='brush' else 0)",src)

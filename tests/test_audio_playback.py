@@ -104,6 +104,57 @@ class AudioPlaybackTests(unittest.TestCase):
             y=self.engine.select(mode,'auto')
             self.assertNotEqual(x,y)
 
+    def test_directional_brush_uses_two_real_recordings_and_no_retrigger(self):
+        a=self.engine.samples['brush_soft_05b'].copy()
+        b=self.engine.samples['brush_smooth_06a'].copy()
+        a.update(id='brush_direction_h_test',direction='horizontal')
+        b.update(id='brush_direction_v_test',direction='vertical')
+        self.engine.samples[a['id']]=a
+        self.engine.samples[b['id']]=b
+        self.engine.by_category['brush']=[a['id'],b['id']]
+        self.engine.brush_horizontal_ids=[a['id']]
+        self.engine.brush_vertical_ids=[b['id']]
+        self.assertTrue(self.engine.begin_stroke('brush','auto'))
+        self.assertTrue(self.engine.brush_directions_active)
+        self.assertEqual(self.mixer.channels[1].plays[-1]['loops'],-1)
+        self.assertEqual(self.mixer.channels[4].plays[-1]['loops'],-1)
+        self.engine.update_motion(600)
+        for _ in range(22):self.engine.update_direction(35,1)
+        h=self.mixer.channels[1].level
+        v=self.mixer.channels[4].level
+        self.assertGreater(h,v*3)
+        for _ in range(22):self.engine.update_direction(1,35)
+        self.assertGreater(self.mixer.channels[4].level,self.mixer.channels[1].level*3)
+        self.assertEqual(len(self.mixer.channels[1].plays),1)
+        self.assertEqual(len(self.mixer.channels[4].plays),1)
+        self.engine.stop_stroke()
+        self.assertFalse(self.mixer.channels[4].busy)
+
+    def test_automatic_brush_blends_original_velvet_recordings_without_retrigger(self):
+        self.assertTrue(self.engine.begin_stroke('brush','auto'))
+        self.assertTrue(self.engine.brush_directions_active)
+        self.assertEqual(self.mixer.channels[1].plays[-1]['loops'],-1)
+        self.assertEqual(self.mixer.channels[4].plays[-1]['loops'],-1)
+        x=self.engine.last_brush_pair
+        self.assertIn('brush_velvet_fav_15_01',self.engine.brush_horizontal_ids)
+        self.assertIn('brush_velvet_fav_15_04',self.engine.brush_vertical_ids)
+        for i in range(50):self.engine.update_direction(45,1);self.engine.update_direction(1,45)
+        self.assertEqual(len(self.mixer.channels[1].plays),1)
+        self.assertEqual(len(self.mixer.channels[4].plays),1)
+        self.engine.stop_stroke()
+        self.assertTrue(self.engine.begin_stroke('brush','auto'))
+        y=self.engine.last_brush_pair
+        self.assertNotEqual(x[0],y[0])
+        self.assertNotEqual(x[1],y[1])
+        self.engine.stop_stroke()
+
+    def test_manual_brush_uses_only_one_channel(self):
+        self.assertTrue(self.engine.begin_stroke('brush','brush_velvet_fav_15_01'))
+        self.assertFalse(self.engine.brush_directions_active)
+        self.assertFalse(self.mixer.channels[4].busy)
+        self.engine.update_direction(1,100)
+        self.assertFalse(self.mixer.channels[4].busy)
+
     def test_no_pitch_processing_when_neutral_and_b_loop_seam(self):
         a=self.engine._load_pcm('curated/brush_soft_05b.wav')
         self.assertTrue(np.array_equal(a,_pitch_and_speed(a,100,0,0)))

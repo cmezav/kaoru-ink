@@ -82,12 +82,20 @@ class AudioEngine:
         pygame.mixer.set_num_channels(5)
         self.channels={mode:pygame.mixer.Channel(i) for i,mode in enumerate(self.MODES)}
         self.preview_channel=pygame.mixer.Channel(3)
+        self.brush_vertical_channel=pygame.mixer.Channel(4)
         self.folder=Path(sounds_folder)
         library=json.loads((self.folder/'library.json').read_text(encoding='utf8'))
         self.samples={s['id']:s for s in library['samples']}
         self.by_category={cat:[s['id'] for s in library['samples'] if s['category']==cat] for cat in self.MODES}
         if any(not self.by_category[c] for c in self.MODES):raise ValueError('Missing samples for a P/B/E tool')
         self.last_random={};self.cache={};self.active_mode=None;self.preview_mode=None
+        # User-approved related velvet clips are assigned H/V mixing roles.
+        # Direction labels are playback roles, not physical recording claims.
+        self.brush_directions_active=False
+        self.brush_mix_h=.5
+        self.last_brush_pair=(None,None)
+        self.brush_horizontal_ids=[s['id'] for s in library['samples'] if s['category']=='brush' and s.get('direction')=='horizontal']
+        self.brush_vertical_ids=[s['id'] for s in library['samples'] if s['category']=='brush' and s.get('direction')=='vertical']
         self.volume=.76
         self.effects={m:{"volume":100,"speed":100,"pitch":0,"brightness":0,"dynamics":70} for m in self.MODES}
         self.muted=False
@@ -109,6 +117,15 @@ class AudioEngine:
         ident=random.choice([x for x in pool if x!=previous] or pool)
         self.last_random[category]=ident
         return ident
+
+    def _choose_brush_direction(self,options,previous):
+        # Prefer the four user-selected velvet recordings without excluding
+        # the other compatible recordings. No immediate repeats per axis.
+        pool=[x for x in options if x!=previous] or list(options)
+        weighted=[]
+        for ident in pool:
+            weighted.extend([ident]*(3 if self.samples[ident].get('favorite') else 1))
+        return random.choice(weighted)
 
     def _load_pcm(self,filename):
         with wave.open(str(self.folder/filename),'rb') as wav:
@@ -142,8 +159,21 @@ class AudioEngine:
         # P/E: exactly one unmodified-pitch source per drag, never repeated.
         # B and J share brush mode: one smooth looping texture motion-gated
         # by the actual mouse movement, without new attacks on each motion.
-        ch.play(self._sound(ident,'loop' if category=='brush' else 'held'),
-                loops=(-1 if category=='brush' else 0),fade_ms=30)
+        self.brush_directions_active=False
+        if category=='brush' and desired=='auto' and self.brush_horizontal_ids and self.brush_vertical_ids:
+            # Two original user-generated brush recordings run simultaneously. Their volumes
+            # crossfade smoothly with cursor orientation; neither retriggers
+            # when the stylus changes direction within the same drag.
+            horizontal=self._choose_brush_direction(self.brush_horizontal_ids,self.last_brush_pair[0])
+            vertical=self._choose_brush_direction(self.brush_vertical_ids,self.last_brush_pair[1])
+            self.last_brush_pair=(horizontal,vertical)
+            ch.play(self._sound(horizontal,'loop'),loops=-1,fade_ms=30)
+            self.brush_vertical_channel.play(self._sound(vertical,'loop'),loops=-1,fade_ms=30)
+            self.brush_directions_active=True
+            self.brush_mix_h=.5
+        else:
+            ch.play(self._sound(ident,'loop' if category=='brush' else 'held'),
+                    loops=(-1 if category=='brush' else 0),fade_ms=30)
         self.active_mode=category
         self.motion_gate=.70
         self.refresh_volume()
@@ -156,6 +186,20 @@ class AudioEngine:
         self.motion_gate=.28*self.motion_gate+.72*(1. if moving else 0.)
         # Fallback is *not* pen force; it is a motion estimate.
         self.motion_estimate=.65*self.motion_estimate+.35*min(1.,max(.06,px_per_sec/950.))
+        self.refresh_volume()
+
+    def update_direction(self,dx,dy):
+        """Blend paired brush textures assigned to horizontal and vertical mixes by drag direction.
+
+        A horizontal movement approaches H=1; vertical approaches H=0;
+        diagonal movements blend them. Direction sign is deliberately ignored:
+        a left-to-right reversal should NOT trigger a new audio attack.
+        """
+        if self.active_mode!='brush' or not self.brush_directions_active:return
+        mag2=float(dx)*dx+float(dy)*dy
+        if mag2<2.0:return
+        target=float(dx)*dx/mag2
+        self.brush_mix_h=.75*self.brush_mix_h+.25*target
         self.refresh_volume()
 
     def set_pressure(self,pressure,real=True):
@@ -178,7 +222,15 @@ class AudioEngine:
             multiplier=self.effects[mode]['volume']/100.
             if mode==self.active_mode:
                 multiplier*=self.motion_gate*strength
-            ch.set_volume(min(1.,base*multiplier))
+            if mode=='brush' and self.brush_directions_active:
+                # Equal-power crossfade, with motion gating applied to both.
+                mix=max(0.,min(1.,self.brush_mix_h))
+                ch.set_volume(min(1.,base*multiplier*(mix**.5)))
+                self.brush_vertical_channel.set_volume(min(1.,base*multiplier*((1.-mix)**.5)))
+            else:
+                ch.set_volume(min(1.,base*multiplier))
+        if not self.brush_directions_active:
+            self.brush_vertical_channel.set_volume(0.)
         if self.preview_mode:
             self.preview_channel.set_volume(base*(self.effects[self.preview_mode]['volume']/100.)*.85)
         else:
@@ -188,6 +240,9 @@ class AudioEngine:
         if self.active_mode is not None:
             ch=self.channels[self.active_mode]
             if ch.get_busy():ch.fadeout(fade_ms)
+            if self.brush_directions_active and self.brush_vertical_channel.get_busy():
+                self.brush_vertical_channel.fadeout(fade_ms)
+        self.brush_directions_active=False
         self.active_mode=None;self.motion_gate=0.
 
     def stop_all(self):
@@ -195,6 +250,7 @@ class AudioEngine:
         for ch in self.channels.values():
             if ch.get_busy():ch.fadeout(75)
         self.preview_channel.fadeout(75)
+        self.brush_vertical_channel.fadeout(75)
 
     def set_volume(self,value):
         self.volume=max(0,min(100,int(value)))/100.

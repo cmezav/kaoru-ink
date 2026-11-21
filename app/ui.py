@@ -147,11 +147,11 @@ class MainWindow(QMainWindow):
         self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P: un audio de 5–8 s por trazo (sin bucle). E: un audio breve de borrador (sin bucle). B o J: mismo pincel, bucle suave solo al pintar.','muted'))
+        h.addWidget(text('P: un sonido por trazo, sin repetición. E: un borrado por trazo. B/J: textura suave que sigue el movimiento y mezcla variantes según dirección, solo mientras coloreas.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('17 muestras seleccionadas de sounds.zip: P (11), B/J (4) y E (2). Los tres modos varían automáticamente. P prioriza audios largos.','muted'))
+        samples.layout().addWidget(text('37 muestras seleccionadas: P (16), B/J (15) y E (6). Los cuatro favoritos de pintura aterciopelada de 1,5 s están protegidos y participan en variación automática. En P los cortos se eligen manualmente para evitar cortes en trazos largos.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
             self.original_tone_buttons[mode]=restore
             group.addWidget(restore)
             content.addWidget(area)
-        content.addWidget(text('P y E respetan al 100 % la grabación original, sin generar texturas de relleno. Los WAV disponibles duran de 0,24 a 1,45 segundos; si el trazo dura más, el audio termina sin reiniciarse. Para trazos continuos más largos se necesitan grabaciones reales más largas.','muted'))
+        content.addWidget(text('P y E usan una sola muestra por gesto, sin extensiones artificiales. Los clips cortos de lápiz están disponibles manualmente; en automático P sigue prefiriendo 5–8 s para evitar terminar demasiado pronto. B/J mezcla suavemente texturas aterciopeladas con la dirección del cursor.','muted'))
         self.pressure_status=text('Presión: comprobando compatibilidad de la tableta…','muted')
         content.addWidget(self.pressure_status)
         body.addWidget(controls)
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.7 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
+        body.addWidget(text('Kaoru Ink 0.10 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
 

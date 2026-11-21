@@ -109,7 +109,9 @@ class StrokeController:
     def mouse_move(self,x,y):
         if not self.active:return
         now=time.monotonic()
-        dist=hypot(x-self.last_point[0],y-self.last_point[1])
+        dx=x-self.last_point[0]
+        dy=y-self.last_point[1]
+        dist=hypot(dx,dy)
         dt=max(.016,now-self.last_motion)
         self.last_point=(x,y)
         if dist<1.2:return
@@ -119,7 +121,10 @@ class StrokeController:
         if not self.started and self.travel>=4:
             self.started=True  # Set before audio, never retry in same drag.
             self.audio.begin_stroke(self.mode,self.settings[self.mode+'_id'])
-        if self.started:self.audio.update_motion(dist/dt)
+        if self.started:
+            self.audio.update_motion(dist/dt)
+            if self.mode=='brush' and hasattr(self.audio,'update_direction'):
+                self.audio.update_direction(dx,dy)
 
     def mouse_up(self):
         if self.active or self.started:self.audio.stop_stroke()

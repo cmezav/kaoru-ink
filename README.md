@@ -1,23 +1,21 @@
-# Kaoru Ink v0.8 — sonidos naturales seleccionados
+# Kaoru Ink v0.10 — biblioteca fusionada (Clip Studio Paint / Windows)
 
-App de Windows para Clip Studio Paint, inspirada en Mechvibes y enfocada en el sonido del lápiz digital. Con la ventana de Clip Studio Paint al frente:
+Biblioteca actual: **37 sonidos**, de los cuales **17** ya estaban aprobados de `sounds.zip`, **10** fueron seleccionados de `sounds2.zip` y **10** son los nuevos WAV aportados en esta conversación. Los **4 favoritos aterciopelados de 1,5 s** (`brush_velvet_fav_15_01` a `_04`) se conservan sin excepción y tienen prioridad al variar automáticamente.
 
-- **P:** una grabación de trazo real por arrastre, nunca repetida ni sintetizada. En selección automática rota entre **5 muestras de 5–8 segundos**, evitando que dos trazos seguidos tengan el mismo sonido. Hay también 6 muestras cortas seleccionables manualmente.
-- **B y J:** activan el **mismo modo pintura**, con **4 muestras** de 5–6 segundos disponibles en variación automática. Solo pintura tiene bucle, cuyo volumen sigue el movimiento; baja al parar y se desvanece al levantar el stylus.
-- **E:** borrador con **2 muestras** de 0,7 y 2,0 segundos, alternadas automáticamente. Sin bucle.
-- Los tres selectores comienzan en **Variar automáticamente** tras la actualización. El programa conserva los deslizadores independientes de volumen, tono, agudos, velocidad y dinámica de P/B-J/E. Los atajos solo se reconocen con Clip Studio Paint en primer plano.
-- La rueda del mouse no cambia el sonido elegido. Se puede minimizar a la bandeja e iniciar con Windows.
+- **P:** 16 muestras. Un único sonido real por trazo, sin bucle ni relleno artificial. Las grabaciones cortas de lápiz están disponibles en la lista, pero el modo automático continúa favoreciendo las originales largas de 5–8 s para no quedarse en silencio demasiado pronto.
+- **B o J:** 15 muestras. Al elegir «Variar automáticamente», usa dos clips de la familia aterciopelada, mezclándolos suavemente de acuerdo con el movimiento horizontal/vertical; la orientación es un **papel de mezcla sonora asignado**, NO una garantía de que los sonidos fueron grabados físicamente con esa orientación. Cambiar de dirección no dispara nuevos archivos. Solo B/J tiene bucle y se silencia al detenerse el lápiz.
+- **E:** 6 muestras. Un solo borrado natural por gesto y sin bucle; las opciones con ataques más marcados se conservan como elección manual.
 
-**Limitación:** si dibujas con P más de 8 segundos o borras más de 2,0 segundos, la pista puede terminar antes que el gesto: no inventamos fricción ni repetimos un archivo para disimularlo. Necesitamos **nuevas grabaciones realmente continuas** para esos casos.
+Todas las muestras están en `assets/sounds/curated/`; el catálogo contiene el nombre original, la duración, la categoría y el estado de selección automática. Consulta `REVISION_FUSION.csv` y `AUDITORIA_SOUNDS2.csv` para ver cuáles se añadieron o se dejaron fuera y por qué. Abre `escuchar-fusion.html` para escuchar antes de actualizar Windows.
 
-## Qué se revisó
+**Audio:** Los 20 añadidos se convirtieron de 48 kHz estéreo a 44,1 kHz mono PCM16 (requisito del motor) por remuestreo de calidad. No se modificó el tono ni la velocidad; únicamente se igualó el volumen con ganancia constante limitada y se suavizaron los extremos de P/E. No se reconstruyó ninguna textura sintética.
 
-De `sounds.zip`: 29 WAV, 1 MP3 (versión anterior descartada), y 1 ZIP interno que contiene duplicados. Se aprobaron técnicamente 17 WAV: 11 de lápiz, 4 de pintura y 2 de borrado. Se descartó el lápiz de 20 segundos por pausas y los borrados largos con varios ataques/silencios. Consulta `REVISION_SONIDOS.csv` para el estado por archivo y `escuchar-curados.html` para escucharlos.
+**Ajustes:** P, B/J y E conservan deslizadores independientes; el volumen aumenta con presión real si el controlador Wintab la entrega, de lo contrario usa una estimación de movimiento. Para mantener el audio natural, dejar velocidad 100 %, tono 0, brillo 0. B/J es el único modo en bucle.
 
-### Construcción del ejecutable
+**Inicio y segundo plano:** La aplicación puede iniciarse con Windows y quedarse en la bandeja. Solo se activa al tener Clip Studio Paint en primer plano. La rueda de desplazamiento no cambia la muestra seleccionada. El logo PNG original se conserva intacto.
 
-Al subir los cambios a la rama main, GitHub Actions compila en Windows. El artifact se llama `KaoruInk-Windows`. La aplicación instalada solo se reemplaza cuando el build termina correctamente. En la carpeta `assets/sounds/curated/` están los 17 WAV; el catálogo está en `assets/sounds/library.json`.
+**Compilación:** `.github/workflows/build-windows.yml` compila con GitHub Actions y deja `KaoruInk.exe` en el artefacto `KaoruInk-Windows`. El proyecto no incluye EXE precompilado. Puedes usar el corrector PowerShell entregado junto con el parche para actualizar `cmezav/kaoru-ink` e instalarlo tras compilar. No es necesario Python local.
 
-## Avisos
+**Licencias:** Los archivos importados de ElevenLabs son los aportados por la persona usuaria. Sus derechos de redistribución dependen de las condiciones aplicables de ElevenLabs. Consulte `ASSETS_NOTICE.md` para la biblioteca anterior.
 
-La variación automática selecciona **una pista por trazo**; no mezcla varias a la vez. Los controles al 100 % de velocidad y 0 de tono mantienen el tono natural. Wintab es experimental: si no hay presión real, la app estima la intensidad a partir de la velocidad del cursor. Consulta `ASSETS_NOTICE.md` para derechos de audio y el logo original.
+**Limitación:** Un sonido P/E más corto que el movimiento se agotará antes de levantar el lápiz; no se crearán prolongaciones artificiales ni un bucle oculto. La sincronización completa depende de qué eventos y presión entregue Windows a la app.

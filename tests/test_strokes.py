@@ -1,5 +1,6 @@
 """Verify every mouse drag fires exactly one event for P/B/E."""
 import ast,math,time,unittest
+from unittest.mock import patch
 from pathlib import Path
 SRC=Path(__file__).resolve().parents[1]/'app'/'input_monitor.py'
 parsed=ast.parse(SRC.read_text(encoding='utf8'),filename=str(SRC))
@@ -14,10 +15,12 @@ class FakeAudio:
     def stop_stroke(self,*args):self.stops+=1
     def update_motion(self,value):self.motion.append(value)
     def stop_all(self):self.stops+=1
+    def gesture_turn(self,axis):self.turns.append(axis);return True
 
 class StrokeTests(unittest.TestCase):
     def setUp(self):
         self.audio=FakeAudio()
+        self.audio.turns=[]
         self.settings={'pencil_id':'pencil_pencil_draw','brush_id':'brush_marker_draw','eraser_id':'eraser_eraser'}
         self.c=StrokeController(self.audio,self.settings)
 
@@ -70,6 +73,33 @@ class StrokeTests(unittest.TestCase):
         self.assertEqual(len(self.audio.begins),1)
         self.assertEqual(self.audio.direction[:2],[(15,0),(0,30)])
         self.c.mouse_up()
+
+    def test_direction_reversal_triggers_one_new_pass_not_timer(self):
+        self.c.change_mode('brush')
+        with patch.object(time,'monotonic',side_effect=[100.,100.1,100.2,100.45,100.54]):
+            self.c.mouse_down(0,0)
+            self.c.mouse_move(20,0)
+            self.c.mouse_move(55,0)
+            self.c.mouse_move(55,10)
+            self.c.mouse_move(55,30)
+        self.assertEqual(self.audio.turns,['vertical'])
+        self.assertEqual(len(self.audio.begins),1)
+
+    def test_steady_movement_and_jitter_never_restarts(self):
+        self.c.change_mode('brush')
+        self.c.mouse_down(0,0)
+        for x in range(5,500,5):
+            self.c.mouse_move(x,0)
+        self.assertEqual(self.audio.turns,[])
+        self.assertEqual(len(self.audio.begins),1)
+
+    def test_no_automatic_new_pass_for_pencil(self):
+        self.c.change_mode('pencil')
+        self.c.mouse_down(0,0)
+        for x in range(1,201,10):self.c.mouse_move(x,0)
+        for y in range(1,201,10):self.c.mouse_move(201,y)
+        self.assertEqual(self.audio.turns,[])
+        self.assertEqual(len(self.audio.begins),1)
 
     def test_keyboard_shortcuts_include_e(self):
         tree=ast.parse(SRC.read_text(encoding='utf8'))

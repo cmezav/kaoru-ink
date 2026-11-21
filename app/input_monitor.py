@@ -1,4 +1,4 @@
-"""Clip Studio Paint-only mouse drags and P/B/E shortcut recognition."""
+"""Clip Studio Paint-only mouse drags and P/B/J/E shortcut recognition."""
 import time
 from math import hypot
 from PySide6.QtCore import QObject, Signal
@@ -88,6 +88,11 @@ class StrokeController:
         self.last_motion=0.
         self.last_tick_motion=0.
         self.travel=0.
+        self.pass_axis=None
+        self.pass_distance=0.
+        self.turn_candidate=None
+        self.turn_candidate_distance=0.
+        self.last_turn_time=0.
 
     def change_mode(self,mode):
         if mode not in ('pencil','brush','eraser'):return
@@ -105,6 +110,11 @@ class StrokeController:
         self.last_motion=time.monotonic()
         self.last_tick_motion=self.last_motion
         self.travel=0.
+        self.pass_axis=None
+        self.pass_distance=0.
+        self.turn_candidate=None
+        self.turn_candidate_distance=0.
+        self.last_turn_time=0.
 
     def mouse_move(self,x,y):
         if not self.active:return
@@ -125,6 +135,44 @@ class StrokeController:
             self.audio.update_motion(dist/dt)
             if self.mode=='brush' and hasattr(self.audio,'update_direction'):
                 self.audio.update_direction(dx,dy)
+            if self.mode in ('brush','eraser'):
+                self._detect_new_pass(dx,dy,dist,now)
+
+    def _detect_new_pass(self,dx,dy,dist,now):
+        # One new sound only when the hand makes a meaningful NEW pass.
+        # NOT when an audio file ends, NOT for mouse jitter, NOT on a timer.
+        if abs(dx)>abs(dy)*1.35:
+            direction=('horizontal',1 if dx>0 else -1)
+        elif abs(dy)>abs(dx)*1.35:
+            direction=('vertical',1 if dy>0 else -1)
+        else:
+            return
+        if self.pass_axis is None:
+            self.pass_axis=direction
+            self.pass_distance=dist
+            return
+        if direction==self.pass_axis:
+            self.pass_distance+=dist
+            self.turn_candidate=None
+            self.turn_candidate_distance=0.
+            return
+        if self.turn_candidate==direction:
+            self.turn_candidate_distance+=dist
+        else:
+            self.turn_candidate=direction
+            self.turn_candidate_distance=dist
+        # Require substantial motion in the previous pass, plus confirmed
+        # new direction and a cooldown. A tiny circular wobble stays silent.
+        if (self.pass_distance>=28. and self.turn_candidate_distance>=16.
+                and now-self.last_turn_time>=.34):
+            if hasattr(self.audio,'gesture_turn'):
+                self.audio.gesture_turn(direction[0])
+            self.pass_axis=direction
+            self.pass_distance=self.turn_candidate_distance
+            self.turn_candidate=None
+            self.turn_candidate_distance=0.
+            self.last_turn_time=now
+
 
     def mouse_up(self):
         if self.active or self.started:self.audio.stop_stroke()

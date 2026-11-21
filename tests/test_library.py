@@ -27,7 +27,7 @@ class LibraryTests(unittest.TestCase):
         auto=[s for s in self.samples if s['auto_eligible'] and s['category']=='pencil']
         self.assertEqual(len(auto),5)
         self.assertTrue(all(s['duration_sec']>=4.8 for s in auto))
-        self.assertTrue(all(s['loop']==(s['category']=='brush') for s in self.samples))
+        self.assertTrue(all(s['loop'] is False for s in self.samples))
     def test_four_favorites_are_retained_and_in_automatic_directional_mode(self):
         expected={f'brush_velvet_fav_15_{i:02d}' for i in range(1,5)}
         samples={s['id']:s for s in self.samples}
@@ -39,10 +39,12 @@ class LibraryTests(unittest.TestCase):
 
     def test_continuation_uses_only_real_original_pitch_clips_without_fixed_loops(self):
         src=(ROOT/'app/audio.py').read_text(encoding='utf8')
-        self.assertIn('class ContinuousLayer:',src)
+        self.assertIn('class GestureVoice:',src)
         self.assertIn('loops=0',src)
         self.assertNotIn('play(snd, loops=-1',src)
         self.assertNotIn('_continuous_friction',src)
+        self.assertNotIn('_sustain_body',src)
+        self.assertNotIn('self.next_end',src)
     def test_source_parses(self):
         for p in (ROOT/'app').glob('*.py'):ast.parse(p.read_text(encoding='utf8'),filename=str(p))
     def test_logo_untouched(self):

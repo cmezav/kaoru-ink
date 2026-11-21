@@ -27,11 +27,10 @@ class LibraryTests(unittest.TestCase):
         actual={str(p.relative_to(SOUNDS)).replace('\\','/') for p in SOUNDS.rglob('*.wav')}
         expected={s[key] for s in self.samples for key in ('file','preview_file')}
         self.assertEqual(actual,expected)
-    def test_no_loop_commands(self):
+    def test_only_brush_can_loop(self):
         audio=(ROOT/'app/audio.py').read_text(encoding='utf8')
-        self.assertNotIn('loops=-1',audio)
-        self.assertNotIn('start_loop',audio)
-        self.assertIn('loops=0',audio)
+        self.assertIn("loops=(-1 if category=='brush' else 0)",audio)
+        self.assertIn("kind=='loop'",audio)
     def test_source_parses(self):
         for p in list((ROOT/'app').glob('*.py')) + [ROOT/'tools/import_public_sfx.py']:
             ast.parse(p.read_text(encoding='utf8'),filename=str(p))

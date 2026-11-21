@@ -22,7 +22,8 @@ def main():
     app=QApplication(sys.argv)
     app.setApplicationName('Kaoru Ink')
     app.setQuitOnLastWindowClosed(False)
-    icon=resource('assets/icon.png')
+    icon=resource('assets/icon.ico')  # Windows EXE icon
+    original_png=resource('assets/icon.png')  # unmodified user PNG
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
 
     # Prevent duplicate playback hooks and duplicate tray icons on login.
@@ -43,7 +44,7 @@ def main():
     except Exception as err:
         QMessageBox.critical(None,'Kaoru Ink — audio','No se pudo iniciar el audio. Revisa tu dispositivo de sonido.\n\n'+str(err))
         return 1
-    window=MainWindow(icon,audio,config.load(),app)
+    window=MainWindow(original_png if original_png.exists() else icon,audio,config.load(),app)
     server.newConnection.connect(lambda:(server.nextPendingConnection().readAll(),window._show()))
     if '--background' in sys.argv and QSystemTrayIcon.isSystemTrayAvailable():
         QTimer.singleShot(100,window.hide)

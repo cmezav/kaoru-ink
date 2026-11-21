@@ -9,6 +9,12 @@ DEFAULTS={
     'close_to_tray':True,
     'volume':76,
     'speed':55,
+    'pitch':0,
+    'brightness':0,
+    'dynamics':70,
+    'pencil_volume':100,
+    'brush_volume':100,
+    'eraser_volume':100,
     'pencil_id':'pencil_pencil_draw',
     'brush_id':'brush_marker_draw',
     'eraser_id':'eraser_eraser',
@@ -30,6 +36,11 @@ def load():
     except (OSError,ValueError):pass
     settings['volume']=max(0,min(100,settings['volume']))
     settings['speed']=max(45,min(120,settings['speed']))
+    settings['pitch']=max(-8,min(8,settings['pitch']))
+    settings['brightness']=max(-100,min(100,settings['brightness']))
+    settings['dynamics']=max(0,min(100,settings['dynamics']))
+    for key in ('pencil_volume','brush_volume','eraser_volume'):
+        settings[key]=max(0,min(100,settings[key]))
     # User selections from removed libraries fall back to valid v0.4 defaults.
     for key in ('pencil_id','brush_id','eraser_id'):
         if not (settings[key]=='auto' or settings[key].startswith(key[:-3]+'_')):

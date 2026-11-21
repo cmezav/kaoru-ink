@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 from . import config
 from .focus import foreground_paint
 from .input_monitor import InputEvents,MouseKeyboardMonitor,StrokeController
+from .pen_pressure import WintabPressureMonitor
 
 STYLE = '''
 QMainWindow,QWidget#root,QScrollArea#scroll { background: #12111c; color: #f4efff; }
@@ -45,6 +46,12 @@ QScrollBar::handle:vertical { background: #514263; border-radius: 4px; }
 '''
 
 
+class SafeComboBox(QComboBox):
+    """Ignore mouse wheel to prevent accidental sound changes while scrolling."""
+    def wheelEvent(self,event):
+        event.ignore()  # Scroll goes to the surrounding panel instead.
+
+
 def text(content,obj=None):
     label=QLabel(content)
     if obj:label.setObjectName(obj)
@@ -68,6 +75,7 @@ class MainWindow(QMainWindow):
         self.controller=StrokeController(audio,settings)
         self.bus=InputEvents()
         self.monitor=MouseKeyboardMonitor(self.bus)
+        self.pressure_monitor=WintabPressureMonitor(self.bus.pressure.emit)
         self.focused=False
         self.muted=False
         self.is_quitting=False
@@ -81,6 +89,11 @@ class MainWindow(QMainWindow):
         self._wiring()
         self.audio.set_volume(settings['volume'])
         self.audio.set_speed(settings['speed'])
+        self.audio.set_pitch(settings['pitch'])
+        self.audio.set_brightness(settings['brightness'])
+        self.audio.set_dynamics(settings['dynamics'])
+        for mode in ('pencil','brush','eraser'):
+            self.audio.set_tool_volume(mode,settings[mode+'_volume'])
         try:
             if settings['start_at_login']:
                 config.set_startup(True)
@@ -88,11 +101,12 @@ class MainWindow(QMainWindow):
             self.start_check.setToolTip(f'No se pudo activar inicio automático: {ex}')
         try:
             self.monitor.start()
+            self.pressure_monitor.start()
         except Exception as ex:
             QMessageBox.warning(self,'Control del mouse','No se pudo iniciar el monitor de entradas: '+str(ex))
         self.timer=QTimer(self)
         self.timer.timeout.connect(self._tick)
-        self.timer.start(80)
+        self.timer.start(45)
         self._tick()
 
     def _build(self):
@@ -136,22 +150,22 @@ class MainWindow(QMainWindow):
         self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P · lápiz, B · pincel y E · borrador: UN sonido por trazo. Sin loops ni repeticiones, incluso al dibujar líneas largas.','muted'))
+        h.addWidget(text('P y E: un roce sostenido por trazo. B: un bucle continuo que solo se oye mientras mueves el pincel. Sin clics nuevos al continuar una línea.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('24 opciones nuevas de SFX Kit y UI SFX: P (12), B (9) y E (3). Un roce aislado y continuación continua, sin repetir audios.','muted'))
+        samples.layout().addWidget(text('24 muestras: P (12), B (9) y E (3). El bucle solo está permitido en B y su volumen sigue el movimiento del cursor.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
             ('pencil','01 · P: lápiz','Un contacto de lápiz por trazo. La fricción continúa sin repetición.', 'pencil_id'),
-            ('brush','02 · B: pincel','Colorear con una sola reproducción, sin loop ni clics nuevos.', 'brush_id'),
+            ('brush','02 · B: pincel','Bucle suave solo mientras mueves el mouse al pintar.', 'brush_id'),
             ('eraser','03 · E: borrador','Borrar con una sola fricción, hasta soltar el mouse.', 'eraser_id')):
 
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
             r=QHBoxLayout();r.setSpacing(12)
-            combo=QComboBox();combo.setMinimumWidth(360);combo.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Fixed)
+            combo=SafeComboBox();combo.setMinimumWidth(360);combo.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Fixed)
             combo.addItem('↝  Variar automáticamente','auto')
             for sid in self.audio.by_category[category]:
                 s=self.audio.samples[sid]
@@ -169,18 +183,40 @@ class MainWindow(QMainWindow):
             samples.layout().addWidget(p)
         body.addWidget(samples)
         controls,content=panel()
-        content.addWidget(text('Mezcla de sonido','headline'))
-        grid=QHBoxLayout();grid.setSpacing(12)
-        volume_col=QVBoxLayout();vol_head=QHBoxLayout();vol_head.addWidget(text('Volumen'));vol_head.addStretch();self.vol_label=text('76 %','value');vol_head.addWidget(self.vol_label)
-        volume_col.addLayout(vol_head)
-        self.vol_slider=QSlider(Qt.Orientation.Horizontal);self.vol_slider.setRange(0,100);self.vol_slider.setValue(self.settings['volume'])
-        volume_col.addWidget(self.vol_slider);grid.addLayout(volume_col,1)
-        speed_col=QVBoxLayout();speed_head=QHBoxLayout();speed_head.addWidget(text('Velocidad + tono'));speed_head.addStretch();self.speed_label=text('1.00×','value');speed_head.addWidget(self.speed_label)
-        speed_col.addLayout(speed_head)
-        self.speed_slider=QSlider(Qt.Orientation.Horizontal);self.speed_slider.setRange(45,120);self.speed_slider.setSingleStep(5);self.speed_slider.setPageStep(5);self.speed_slider.setValue(self.settings['speed'])
-        speed_col.addWidget(self.speed_slider);grid.addLayout(speed_col,1)
-        content.addLayout(grid)
-        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,55×. Los tres modos mantienen una sola reproducción por trazo.','muted'))
+        content.addWidget(text('Mesa de sonido · ajusta a tu gusto','headline'))
+        content.addWidget(text('Velocidad cambia cuánto dura el trazo; Tono ajusta la altura del sonido sin cambiar su duración. Brillo realza o suaviza los agudos.','muted'))
+        self.mix_sliders={}
+        self.mix_labels={}
+        mix_specs=[
+            ('volume','Volumen general',0,100,'%'),
+            ('speed','Velocidad',45,120,'×'),
+            ('pitch','Tono / agudeza',-8,8,'st'),
+            ('brightness','Brillo / agudos',-100,100,'%'),
+            ('dynamics','Sensibilidad a presión',0,100,'%'),
+            ('pencil_volume','Volumen P · lápiz',0,100,'%'),
+            ('brush_volume','Volumen B · pincel',0,100,'%'),
+            ('eraser_volume','Volumen E · borrador',0,100,'%')
+        ]
+        for i in range(0,len(mix_specs),2):
+            grid=QHBoxLayout();grid.setSpacing(18)
+            for key,name,lower,upper,suffix in mix_specs[i:i+2]:
+                col=QVBoxLayout()
+                head=QHBoxLayout();head.addWidget(text(name));head.addStretch()
+                value_label=text('', 'value');head.addWidget(value_label)
+                col.addLayout(head)
+                slider=QSlider(Qt.Orientation.Horizontal)
+                slider.setRange(lower,upper)
+                slider.setValue(self.settings[key])
+                slider.setSingleStep(1)
+                self.mix_sliders[key]=slider
+                self.mix_labels[key]=value_label
+                col.addWidget(slider)
+                grid.addLayout(col,1)
+                self._mix_value_label(key,self.settings[key])
+            content.addLayout(grid)
+        content.addWidget(text('Dinámica: con tableta Wintab compatible se intenta leer presión real; de lo contrario se estima la intensidad con la velocidad del cursor (no es presión física). En pausas B queda en silencio.','muted'))
+        self.pressure_status=text('Presión: comprobando compatibilidad de la tableta…','muted')
+        content.addWidget(self.pressure_status)
         body.addWidget(controls)
         options,option_layout=panel()
         option_layout.addWidget(text('En segundo plano','headline'))
@@ -192,11 +228,10 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.4 · Inspirado en Mechvibes · Solo Windows · El sonido requiere Clip Studio Paint en primer plano.','muted'))
+        body.addWidget(text('Kaoru Ink 0.5 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
-        self.vol_label.setText(f"{self.settings['volume']} %")
-        self.speed_label.setText(f"{self.settings['speed']/100:.2f}×")
+
 
     def _tray(self,icon_path):
         self.tray=QSystemTrayIcon(QIcon(str(icon_path)),self)
@@ -216,14 +251,15 @@ class MainWindow(QMainWindow):
         self.bus.moved.connect(self._on_move)
         self.bus.up.connect(self.controller.mouse_up)
         self.bus.tool.connect(self._set_mode)
+        self.bus.pressure.connect(self._on_pressure)
         self.pencil_button.clicked.connect(lambda:self._set_mode('pencil'))
         self.brush_button.clicked.connect(lambda:self._set_mode('brush'))
         self.eraser_button.clicked.connect(lambda:self._set_mode('eraser'))
         for category,setting in [('pencil','pencil_id'),('brush','brush_id'),('eraser','eraser_id')]:
             self.combos[category].currentIndexChanged.connect(lambda _,c=category,k=setting:self._selected(c,k))
             self.preview_buttons[category].clicked.connect(lambda _,c=category:self._preview(c))
-        self.vol_slider.valueChanged.connect(self._volume)
-        self.speed_slider.valueChanged.connect(self._speed)
+        for key,slider in self.mix_sliders.items():
+            slider.valueChanged.connect(lambda val,k=key:self._mix_change(k,val))
         self.start_check.toggled.connect(self._start_change)
         self.close_check.toggled.connect(self._close_change)
 
@@ -236,13 +272,27 @@ class MainWindow(QMainWindow):
         self.status.setText('▶ Prueba: '+name)
         QTimer.singleShot(1000,self._update_status)
 
-    def _volume(self,value):
-        self.vol_label.setText(f'{value} %');self.settings['volume']=value
-        self.audio.set_volume(value);config.save(self.settings)
+    def _mix_value_label(self,key,value):
+        if key=='speed':label=f'{value/100:.2f}×'
+        elif key=='pitch':label=f'{value:+d} st'
+        else:label=f'{value} %'
+        self.mix_labels[key].setText(label)
 
-    def _speed(self,value):
-        self.speed_label.setText(f'{value/100:.2f}×');self.settings['speed']=value
-        self.controller.mouse_up();self.audio.set_speed(value);config.save(self.settings)
+    def _mix_change(self,key,value):
+        self._mix_value_label(key,value)
+        self.settings[key]=value
+        if key=='volume':self.audio.set_volume(value)
+        elif key=='speed':self.controller.mouse_up();self.audio.set_speed(value)
+        elif key=='pitch':self.controller.mouse_up();self.audio.set_pitch(value)
+        elif key=='brightness':self.controller.mouse_up();self.audio.set_brightness(value)
+        elif key=='dynamics':self.audio.set_dynamics(value)
+        elif key.endswith('_volume'):self.audio.set_tool_volume(key[:-7],value)
+        config.save(self.settings)
+
+    def _on_pressure(self,amount):
+        # The hardware driver may send packets while Paint is not focused.
+        # Do not play anything; this only changes the next/current gain.
+        self.audio.set_pressure(amount,real=True)
 
     def _start_change(self,enabled):
         try:
@@ -291,6 +341,9 @@ class MainWindow(QMainWindow):
                 if not now:self.audio.stop_all()
                 self._update_status()
             self.controller.tick(self.focused and not self.muted)
+            if hasattr(self,'pressure_status'):
+                signal='Presión real Wintab' if self.audio.real_pressure else 'Intensidad estimada por movimiento'
+                self.pressure_status.setText('Dinámica activa: '+signal)
         except Exception as ex:
             self.status.setText('No se pudo comprobar Clip Studio: '+str(ex))
 
@@ -315,6 +368,7 @@ class MainWindow(QMainWindow):
         if hasattr(self,'timer'):self.timer.stop()
         self.controller.disable()
         self.monitor.stop()
+        self.pressure_monitor.stop()
         self.audio.close()
         self.tray.hide()
         self.app.quit()

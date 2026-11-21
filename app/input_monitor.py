@@ -10,6 +10,7 @@ class InputEvents(QObject):
     moved = Signal(int, int)
     up = Signal()
     tool = Signal(str)
+    pressure = Signal(float)
     issue = Signal(str)
 
 
@@ -132,7 +133,7 @@ class StrokeController:
             self.started=False
             return
         # Quiet on a mouse pause without stopping or retriggering.
-        if self.active and self.started and time.monotonic()-self.last_motion>.22:
+        if self.active and self.started and time.monotonic()-self.last_motion>.10:
             self.audio.update_motion(0)
 
     def disable(self):

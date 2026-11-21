@@ -270,6 +270,7 @@ class AudioEngine:
         self.lock = threading.RLock()
         self.clock = time.monotonic
         self.volume = .76
+        self.output_boost_db = 0  # 0 dB = bit-identical legacy mix.
         self.muted = False
         self.effects = {m: {'volume':100,'speed':100,'pitch':0,'brightness':0,'dynamics':70}
                         for m in MODES}
@@ -498,6 +499,14 @@ class AudioEngine:
                 self.preview_mode = None
         if self.muted:
             result[:] = 0
+        # Final output-only gain. No changes to sample selection, grain timing,
+        # pitch, pressure response or the P/B/J/E signal before this point.
+        # A per-block peak ceiling prevents hard clipping at high boost values.
+        if self.output_boost_db and not self.muted:
+            result *= 10. ** (self.output_boost_db / 20.)
+            peak = float(np.max(np.abs(result))) if frames else 0.
+            if peak > .95:
+                result *= .95 / peak
         np.clip(result,-.97,.97,out=result)
         self.last_peak = float(np.max(np.abs(result))) if frames else 0.
         return result
@@ -538,6 +547,11 @@ class AudioEngine:
     def set_volume(self, value):
         with self.lock:
             self.volume = float(np.clip(int(value),0,100))/100.
+
+    def set_output_boost(self, db):
+        """Extra final output volume only (0-12 dB). No changes to presets."""
+        with self.lock:
+            self.output_boost_db = int(np.clip(int(db), 0, 12))
 
     def set_effect(self, mode, key, value):
         if mode not in MODES or key not in self.effects[mode]:

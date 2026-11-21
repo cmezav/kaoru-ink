@@ -12,6 +12,7 @@ DEFAULTS={
     'close_to_tray':True,
     'visual_detection_enabled':True,
     'volume':76,  # overall safety volume; each tool has independent controls
+    'output_boost_db':8,  # v0.19: final amplitude boost (0..12 dB)
     'per_tool_controls_v1':True,
     'pencil_id':'auto',
     'brush_id':'brush_pair_A',
@@ -46,6 +47,7 @@ def load():
                 old=saved.get(key if param=='volume' else param)
                 if type(old) is int:settings[key]=old
     settings['volume']=max(0,min(100,settings['volume']))
+    settings['output_boost_db']=max(0,min(12,settings['output_boost_db']))
     for mode in MODES:
         for param,(lo,hi,_) in PARAMETERS.items():
             key=f'{mode}_{param}'

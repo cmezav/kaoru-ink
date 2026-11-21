@@ -1,8 +1,7 @@
-"""Optional, screenshot-free-in-storage CSP tool recognition via Windows GDI.
+"""Optional pixel-only CSP tool recognition via Windows GDI.
 
-Calibrated to the user's 1920x1080 primary monitor and fixed left toolbar.
-This reads 45 pixels at most, only when CSP is foreground. It never saves
-screenshots, changes CSP, or accesses the drawing canvas.
+Calibrated to 1920x1080 primary and current left toolbar. Samples 120 pixels
+within the toolbar only, never the canvas, and never writes screenshot files.
 """
 from __future__ import annotations
 
@@ -18,11 +17,13 @@ TOOL_POINTS = (
     ('J',  'brush', 340),
     ('E',  'eraser', 272),
 )
-X_POINTS = (33, 35, 37)
-Y_OFFSETS = (-2, 0, 2)
-MIN_SCORES = {'P1':5, 'P2':5, 'B':4, 'J':5, 'E':5}
-# B is only 4/9 in one real screenshot; E=3/9 in the log is unreliable.
-STABLE_READS = 3
+# These points avoid pale icon strokes; 24 pixels per tool instead of 9.
+# Offline calibration: P1=20, P2=19, B=21, J=14, E=14 out of 24.
+X_POINTS = (12, 14, 18, 20, 24, 25, 33, 35)
+Y_OFFSETS = (-3, 0, 3)
+MIN_SCORES = {'P1':10, 'P2':10, 'B':10, 'J':10, 'E':10}
+STRONG_SNAPSHOT = 10
+STABLE_READS = 2
 
 
 def is_selected_rgb(rgb):
@@ -30,23 +31,26 @@ def is_selected_rgb(rgb):
     return 70 <= r <= 135 and b - r >= 20 and g - r >= 5
 
 
-def choose_tool(scores):
-    """Accept exactly one strong selected icon, reject ambiguous hover states."""
+def choose_tool(scores, *, min_score=None):
+    """Select the unique highlighted button, never a runner-up or hover."""
+    threshold = MIN_SCORES if min_score is None else {k:min_score for k in MIN_SCORES}
     candidates = [key for key, _, _ in TOOL_POINTS
-                  if scores.get(key, 0) >= MIN_SCORES[key]]
-    # If a second button has a near-selected appearance, don't guess.
-    runners = [key for key, _, _ in TOOL_POINTS if scores.get(key, 0) >= 4]
-    if len(candidates) != 1 or len(runners) != 1:
+                  if scores.get(key, 0) >= threshold[key]]
+    if len(candidates) != 1:
         return None
-    return candidates[0]
-
+    winner = candidates[0]
+    # Readings from a second highlighted button must be substantially weaker.
+    if any(scores.get(other, 0) >= max(6, scores[winner]-5)
+           for other, _, _ in TOOL_POINTS if other != winner):
+        return None
+    return winner
 
 def mode_for_key(key):
     return next((mode for name, mode, _ in TOOL_POINTS if key == name), None)
 
 
 class VisualStabilizer:
-    """Three matching samples required; uncertain samples never change modes."""
+    """Consecutive selected readings required; uncertainty preserves prior mode."""
     def __init__(self):
         self.candidate = None
         self.consecutive = 0
@@ -74,7 +78,7 @@ class VisualStabilizer:
 
 
 class CspVisualDetector:
-    """Poll small screen area at most ~6 times/sec, only when CSP foreground.
+    """Poll selected pixels only when CSP foreground, no screenshot storage.
 
     It is deliberately fail-closed on other resolutions and window layouts.
     Keyboard shortcuts and UI tool buttons remain functional independently.
@@ -149,6 +153,30 @@ class CspVisualDetector:
             self._win.ReleaseDC(None, dc)
         return scores
 
+    def snapshot_mode(self, csp_focused):
+        """Strong synchronous read right before a canvas stroke begins.
+
+        A toolbar click can be followed by drawing before 2 background polls.
+        A confident snapshot at pen-down prevents that first stroke using P.
+        Unknown/moved UI fails closed without switching.
+        """
+        if not self.enabled or not csp_focused or not self._layout_supported():
+            return None
+        try:
+            scores = self._read_scores()
+        except OSError:
+            return None
+        key = choose_tool(scores, min_score=STRONG_SNAPSHOT)
+        if key is None:
+            return None
+        self.stable.candidate = key
+        self.stable.consecutive = STABLE_READS
+        self.stable.selected = key
+        self.last_key = key
+        self.last_score = scores[key]
+        self.reason = f'{key} -> {mode_for_key(key)} ({self.last_score}/24)'
+        return mode_for_key(key)
+
     def poll(self, csp_focused):
         """Return confirmed audio mode or None; never guesses on uncertainty."""
         if not self.enabled or not csp_focused:
@@ -173,7 +201,7 @@ class CspVisualDetector:
         if mode is not None:
             self.last_key = key
             self.last_score = scores[key]
-            self.reason = f'{key} -> {mode} ({self.last_score}/9)'
+            self.reason = f'{key} -> {mode} ({self.last_score}/24)'
         elif key is None:
             self.reason = 'sin lectura segura; teclado disponible'
         else:

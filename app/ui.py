@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self._tray(app_icon)
         self._wiring()
         self.audio.set_volume(settings['volume'])
+        self.audio.set_output_boost(settings.get('output_boost_db', 8))
         for mode in ('pencil','brush','eraser'):
             for key in ('volume','speed','pitch','brightness','dynamics'):
                 self.audio.set_effect(mode,key,settings[f'{mode}_{key}'])
@@ -155,9 +156,23 @@ class MainWindow(QMainWindow):
         self.visual_check=QCheckBox('Detectar herramientas al hacer clic en CSP (experimental, 1920 × 1080)')
         self.visual_check.setChecked(self.settings.get('visual_detection_enabled',True))
         h.addWidget(self.visual_check)
-        self.visual_status=text('Detección visual: comprobando barra de herramientas…','muted')
+        self.visual_status=text('Detección visual: comprobando herramienta activa…','muted')
         h.addWidget(self.visual_status)
         body.addWidget(hero)
+        # Master output boost: controls final amplitude only, not any P/E/B/J sound.
+        boost_panel, boost_layout = panel()
+        boost_layout.addWidget(text('Potencia general del sonido', 'headline'))
+        boost_layout.addWidget(text('Amplificación posterior a la mezcla. No cambia el tono ni la velocidad. Reduce este valor si escuchas distorsión.', 'muted'))
+        boost_row = QHBoxLayout()
+        self.output_boost_slider = QSlider(Qt.Orientation.Horizontal)
+        self.output_boost_slider.setRange(0, 12)
+        self.output_boost_slider.setSingleStep(1)
+        self.output_boost_slider.setValue(settings.get('output_boost_db', 8))
+        self.output_boost_label = text(f"+{settings.get('output_boost_db', 8)} dB", 'value')
+        boost_row.addWidget(self.output_boost_slider, 1)
+        boost_row.addWidget(self.output_boost_label)
+        boost_layout.addLayout(boost_row)
+        body.addWidget(boost_panel)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
         samples.layout().addWidget(text('37 grabaciones: P (16), B/J (15) y E (6). En automático el motor combina fragmentos de las muestras aprobadas mientras te mueves; los cuatro favoritos aterciopelados siguen incluidos. En manual usa solo la grabación elegida como fuente.','muted'))
@@ -278,6 +293,13 @@ class MainWindow(QMainWindow):
         self.start_check.toggled.connect(self._start_change)
         self.close_check.toggled.connect(self._close_change)
         self.visual_check.toggled.connect(self._visual_toggle)
+        self.output_boost_slider.valueChanged.connect(self._output_boost_changed)
+
+    def _output_boost_changed(self, value):
+        self.settings['output_boost_db'] = int(value)
+        self.audio.set_output_boost(value)
+        self.output_boost_label.setText(f'+{value} dB')
+        config.save(self.settings)
 
     def _on_keyboard_mode(self,mode):
         # Keyboard remains immediate; let CSP repaint before visual override.
@@ -349,7 +371,17 @@ class MainWindow(QMainWindow):
         self._update_status()
 
     def _on_down(self,x,y):
-        if self.focused and not self.muted:self.controller.mouse_down(x,y)
+        if not self.focused or self.muted:
+            return
+        # Paint starts immediately after a click on B/J. Before the first
+        # canvas stroke, read the selected toolbar icon synchronously so the
+        # sound cannot remain on the previously selected pencil by latency.
+        # Avoid reading on toolbar clicks (the mouse could hover a tool).
+        if x >= 110 and time.monotonic() >= self.visual_keyboard_until:
+            mode = self.visual_detector.snapshot_mode(foreground_paint())
+            if mode and not self.controller.active and mode != self.controller.mode:
+                self._set_mode(mode)
+        self.controller.mouse_down(x,y)
 
     def _on_move(self,x,y):
         if self.focused and not self.muted and foreground_paint():

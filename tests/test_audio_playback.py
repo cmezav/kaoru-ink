@@ -1,134 +1,143 @@
-"""Regression: v0.11 timed clip handoffs MUST NOT return."""
-import sys
-import types
+"""Real-time texture tests: sustained movement, tone, pressure and direction."""
 import unittest
-from unittest.mock import patch
 from pathlib import Path
 import numpy as np
-
-from app.audio import AudioEngine, _pitch_and_speed
+from app.audio import AudioEngine, _pitch_and_speed, GrainBank, RATE
 
 ROOT=Path(__file__).resolve().parents[1]
 
-class FakeSound:
-    def __init__(self,buffer):self.nbytes=len(buffer)
-    def get_length(self):return self.nbytes/2/44100.
+class FakeStream:
+    def __init__(self,callback):self.callback=callback;self.started=False
+    def start(self):self.started=True
+    def stop(self):self.started=False
+    def close(self):self.closed=True
 
-class FakeChannel:
-    def __init__(self):
-        self.clock=lambda:0.
-        self.end_time=0.
-        self.plays=[]
-        self.busy=False
-        self.level=0.
-    def play(self,sound,**kwargs):
-        self.plays.append(kwargs)
-        self.busy=True
-        self.end_time=self.clock()+sound.get_length()
-    def stop(self):self.busy=False
-    def get_busy(self):return self.busy and self.clock()<self.end_time
-    def fadeout(self,ms):self.busy=False
-    def set_volume(self,value):self.level=value
-
-class FakeMixer:
-    def __init__(self):self.channels=[FakeChannel() for _ in range(9)]
-    def pre_init(self,**kwargs):pass
-    def init(self):pass
-    def set_num_channels(self,n):self.num_channels=n
-    def Channel(self,i):return self.channels[i]
-    def Sound(self,buffer):return FakeSound(buffer)
-    def quit(self):pass
-
-class AudioPlaybackTests(unittest.TestCase):
+class PlaybackTests(unittest.TestCase):
     def setUp(self):
-        self.mixer=FakeMixer()
-        self.now=10.
-        with patch.dict(sys.modules,{'pygame':types.SimpleNamespace(mixer=self.mixer)}):
-            self.engine=AudioEngine(ROOT/'assets/sounds')
+        self.engine=AudioEngine(ROOT/'assets/sounds',stream_factory=FakeStream)
+        self.now=100.
         self.engine.clock=lambda:self.now
-        for ch in self.mixer.channels:ch.clock=self.engine.clock
 
-    def advance(self,seconds):
-        for _ in range(round(seconds/.05)):
-            self.now+=.05
-            self.engine.tick()
+    def tearDown(self):self.engine.close()
 
-    def count(self,mode):
-        return sum(len(ch.plays) for ch in self.engine.layers[mode].channels)
+    def render(self,frames=1024):
+        output=np.zeros((frames,1),dtype='float32')
+        self.engine._callback(output,frames,None,None)
+        self.now+=frames/RATE
+        return output[:,0].copy()
 
-    def test_original_audio_bit_exact_neutral(self):
+    def test_neutral_original_samples_not_resampled(self):
         for ident in ('pencil_long_08a','brush_velvet_fav_15_01','eraser_medium_25'):
             pcm=self.engine._load_pcm('curated/'+ident+'.wav')
             self.assertTrue(np.array_equal(pcm,_pitch_and_speed(pcm,100,0,0)))
-            self.assertEqual(self.engine._sound(ident,'held').nbytes,len(pcm)*2)
 
-    def test_no_timed_restart_on_90_second_straight_drag_in_any_mode(self):
-        for mode in self.engine.MODES:
+    def test_uninterrupted_25_second_drag_each_mode(self):
+        for mode in ('pencil','brush','eraser'):
             with self.subTest(mode=mode):
-                self.engine.begin_stroke(mode,'auto')
-                self.engine.update_motion(350)
-                self.advance(90)
-                self.assertEqual(self.count(mode),1)
-                self.assertTrue(all(k.get('loops')==0 for ch in self.engine.layers[mode].channels for k in ch.plays))
+                self.assertTrue(self.engine.begin_stroke(mode,'auto'))
+                self.engine.update_motion(480)
+                chunks=[]
+                for _ in range(round(25*RATE/4096)):
+                    chunks.append(self.render(4096))
+                # The audio remains present near the end of long strokes.
+                last=np.concatenate(chunks[-6:])
+                self.assertGreater(np.sqrt(np.mean(last*last)),.001)
+                self.assertGreater(self.engine.rendered_frames,24*RATE)
                 self.engine.stop_stroke()
+                for _ in range(10):self.render(4096)
+                self.assertIsNone(self.engine.active_mode)
 
-    def test_no_audio_relaunch_on_direction_update(self):
-        self.engine.begin_stroke('brush','auto')
-        for i in range(100):
-            self.engine.update_direction(35,2 if i%2 else 35)
-            self.advance(.05)
-        self.assertEqual(self.count('brush'),1)
+    def test_sustained_90_seconds_without_source_expiration(self):
+        for mode in ('pencil','brush','eraser'):
+            self.engine.begin_stroke(mode,'auto')
+            self.engine.update_motion(460)
+            tail=[]
+            for n in range(round(90*RATE/8192)):
+                out=self.render(8192)
+                if n>round(85*RATE/8192):tail.append(out)
+            self.assertGreater(np.sqrt(np.mean(np.concatenate(tail)**2)),.001)
+            self.engine.stop_stroke()
+            for _ in range(4):self.render(8192)
+            self.assertIsNone(self.engine.active_mode)
 
-    def test_actual_brush_pass_can_trigger_one_new_oneshot(self):
-        self.engine.begin_stroke('brush','auto')
-        before=self.engine.layers['brush'].current_id
-        self.engine.gesture_turn('vertical')
-        self.assertEqual(self.count('brush'),2)
-        self.assertNotEqual(self.engine.layers['brush'].current_id,before)
-        self.advance(10)
-        self.assertEqual(self.count('brush'),2)
-
-    def test_eraser_new_pass_can_trigger_one_new_oneshot(self):
-        self.engine.begin_stroke('eraser','auto')
-        self.engine.gesture_turn('horizontal')
-        self.assertEqual(self.count('eraser'),2)
-        self.advance(15)
-        self.assertEqual(self.count('eraser'),2)
-
-    def test_manual_selected_sound_never_restarts_on_turns(self):
-        self.engine.begin_stroke('brush','brush_velvet_fav_15_01')
-        self.assertFalse(self.engine.gesture_turn('vertical'))
-        self.advance(10)
-        self.assertEqual(self.count('brush'),1)
-
-    def test_pencil_never_turns_or_restarts(self):
+    def test_new_gesture_after_release(self):
         self.engine.begin_stroke('pencil','auto')
-        self.assertFalse(self.engine.gesture_turn('horizontal'))
-        self.advance(16)
-        self.assertEqual(self.count('pencil'),1)
-
-    def test_no_overlapping_loop_pipelines(self):
-        self.engine.begin_stroke('brush','auto')
-        self.assertEqual(self.count('brush'),1)
-        self.assertFalse(any(ch.plays for ch in self.mixer.channels[4:8]))
+        self.engine.update_motion(300)
+        self.render(4096)
         self.engine.stop_stroke()
-
-    def test_new_mouse_stroke_can_start_again(self):
-        self.engine.begin_stroke('pencil','auto')
-        self.assertFalse(self.engine.begin_stroke('pencil','auto'))
-        self.engine.stop_stroke()
+        for _ in range(8):self.render(4096)
         self.assertTrue(self.engine.begin_stroke('pencil','auto'))
-        self.assertEqual(self.count('pencil'),2)
 
-    def test_volume_and_tone_independent(self):
-        oldb=self.engine.effects['brush'].copy();olde=self.engine.effects['eraser'].copy()
-        self.engine.set_effect('pencil','volume',40)
-        self.engine.set_effect('pencil','pitch',2)
-        self.assertEqual(self.engine.effects['brush'],oldb)
-        self.assertEqual(self.engine.effects['eraser'],olde)
+    def test_pressure_drives_volume_and_source_is_honest(self):
+        self.engine.begin_stroke('eraser','auto')
+        self.engine.update_motion(380)
+        self.engine.set_pressure(.15,True)
+        self.assertEqual(self.engine.real_packet_count,1)
+        self.assertAlmostEqual(self.engine.last_real_pressure,.15)
+        self.assertEqual(self.engine.pressure_source,'movimiento')
+        low=self.engine._strength()
+        self.assertEqual(self.engine.pressure_source,'wintab')
+        self.engine.set_pressure(.95,True)
+        high=self.engine._strength()
+        self.assertGreater(high,low*1.7)
+        self.now+=1.
+        self.engine.tick()
+        self.assertFalse(self.engine.real_pressure)
+        self.engine._strength()
+        self.assertEqual(self.engine.pressure_source,'movimiento')
 
-    def test_preview_play_once(self):
+    def test_direction_changes_gain_without_a_retrigger(self):
+        self.engine.begin_stroke('brush','auto')
+        self.engine.update_motion(450)
+        for _ in range(4):self.render(4096)
+        before=self.engine.banks['horizontal']
+        self.engine.update_direction(0,35)
+        for _ in range(4):self.render(4096)
+        self.assertIs(self.engine.banks['horizontal'],before)
+        self.assertGreater(self.engine.axis_mix,.5)
+        self.engine.gesture_turn('horizontal')
+        for _ in range(4):self.render(4096)
+        self.assertLess(self.engine.axis_mix,.8)
+
+    def test_motion_pause_fades_and_resume_same_live_gesture(self):
+        self.engine.begin_stroke('pencil','auto')
+        self.engine.update_motion(300)
+        for _ in range(5):self.render(4096)
+        self.engine.update_motion(0)
+        for _ in range(9):quiet=self.render(4096)
+        self.assertLess(np.max(np.abs(quiet)),.004)
+        original=self.engine.banks['main']
+        self.engine.update_motion(300)
+        for _ in range(8):loud=self.render(4096)
+        self.assertGreater(np.sqrt(np.mean(loud*loud)),.001)
+        self.assertIs(self.engine.banks['main'],original)
+
+    def test_preview_still_plays_single_original_sample(self):
         self.engine.preview('brush','brush_velvet_fav_15_01')
-        self.assertEqual(self.mixer.channels[8].plays[-1]['loops'],0)
+        self.assertEqual(self.engine.preview_mode,'brush')
+        self.assertEqual(len(self.engine.preview_pcm),self.engine._load_pcm('curated/brush_velvet_fav_15_01.wav').size)
+
+    def test_separate_settings(self):
+        before_b=self.engine.effects['brush'].copy()
+        before_e=self.engine.effects['eraser'].copy()
+        self.engine.set_effect('pencil','volume',45)
+        self.engine.set_effect('pencil','dynamics',95)
+        self.assertEqual(before_b,self.engine.effects['brush'])
+        self.assertEqual(before_e,self.engine.effects['eraser'])
+
+    def test_auto_uses_multiple_recordings_in_one_drag(self):
+        self.engine.begin_stroke('brush','auto')
+        self.engine.update_motion(500)
+        for _ in range(170):self.render(4096)
+        used=self.engine.banks['horizontal'].used_ids | self.engine.banks['vertical'].used_ids
+        self.assertGreaterEqual(len(used),4)
+        self.assertTrue(set(['brush_velvet_fav_15_01','brush_velvet_fav_15_02','brush_velvet_fav_15_03','brush_velvet_fav_15_04']) & used)
+
+    def test_manual_one_clip_is_manual(self):
+        ident='pencil_warm_10_02'
+        self.engine.begin_stroke('pencil',ident)
+        self.engine.update_motion(420)
+        for _ in range(200):self.render(1024)
+        self.assertEqual(self.engine.banks['main'].used_ids,{ident})
 
 if __name__=='__main__':unittest.main()

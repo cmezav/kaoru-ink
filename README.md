@@ -1,27 +1,31 @@
-# Kaoru Ink v0.12 — Audio por gestos, sin bucles de reloj
+# Kaoru Ink v0.13 — sonido en tiempo real ligado al movimiento
 
-**Corrección del defecto de v0.11 demostrado en la grabación del 21 de noviembre**: el motor anterior reactivaba una pista al agotarse la anterior, incluso durante un arrastre uniforme. El resultado fue una cadencia audible de roces repetidos.
+Esta versión cambia el motor anterior que dejaba acabar un WAV a los pocos segundos o reactivaba otro con una cadencia demasiado evidente.
 
-## Regla nueva
+## Comportamiento
 
-- **P**: exactamente un archivo original por cada arrastre del lápiz. Nunca se vuelve a disparar durante el mismo arrastre, ni por tiempo ni por dirección.
-- **B o J**: una grabación natural cuando comienza a colorear. **Solo** se permite otra en variación automática al confirmar una nueva pasada horizontal/vertical o inversión de dirección; exige desplazamiento significativo y evita movimientos pequeños. El cambio usa un fundido de 90 ms.
-- **E**: mismo criterio por pasadas reales; un borrado continuo recto no reinicia una pista por tiempo, y una nueva pasada de borrado puede reproducir otra muestra solo en automático.
-- **Selección manual**: una sola grabación por arrastre, incluso para B/J/E; no hay relanzamientos por cambios de dirección.
-- Se mantuvieron los **37 sonidos** originales y el **PNG exacto** proporcionado por la persona usuaria. Tono, brillo, velocidad y sensibilidad se ajustan independientemente para P, B/J y E.
-- La presión física depende de si el controlador de la tableta permite leerla mediante Wintab; si no, la intensidad depende del desplazamiento. El sonido es audible solo con Clip Studio Paint al frente.
+- **P**: mientras dibujas, un flujo de pequeños fragmentos *internos* de grabaciones reales de lápiz. El audio no termina al agotarse un archivo. Cambia la textura a intervalos irregulares, sin volver a reproducir el inicio completo del clip. Son 16 opciones manuales y una selección automática que prioriza 5 grabaciones aprobadas.
+- **B/J**: pintura continua con dos texturas que se mezclan según la dirección horizontal o vertical. Los cuatro favoritos de 1,5 segundos siguen incluidos. No se reinicia un WAV al girar el lápiz.
+- **E**: fricción continua de borrador, también ligada a la actividad. 6 opciones y variación automática entre las aprobadas.
+- **Movimiento**: volumen que se desvanece cuando detienes la mano y reaparece al moverla, sin reactivar el ataque original. Parada suave cuando levantas el lápiz.
+- **Presión**: intenta leer Wintab. Si llegan paquetes recientes se verá **Presión REAL Wintab** con porcentaje; cuando no lleguen, muestra claramente **Intensidad ESTIMADA por movimiento**. El cursor no permite medir la fuerza física del lápiz, y algunas tabletas/Windows Ink no exponen presión a una aplicación en segundo plano.
+- Los controles de volumen, velocidad, tono, brillo y dinámica permanecen **independientes** para P, B/J y E. A valores neutros, las fuentes se leen a su tono y velocidad de origen, sin desplazar el tono automáticamente.
+- No se cambia ni una muestra de las **37 grabaciones** ni `assets/icon.png` (último logo del usuario, sin modificaciones).
 
-**Límite importante:** no existe audio auténticamente perpetuo y no repetitivo al reproducir una biblioteca finita. Si la línea recta dura más que el WAV y no haces una nueva pasada, el sonido termina. Esta versión da prioridad explícita a **no escuchar bucles** sobre fingir una continuidad artificial. Los cambios de dirección en B/J/E sí pueden producir un nuevo roce, asociado al gesto real, y no a un cronómetro.
+## Importante: límites de sonido
 
-## Prueba sugerida
+Esto no reproduce un audio infinito auténtico: reconstruye una textura utilizando trozos breves de distintas grabaciones de la biblioteca, seleccionados para evitar los ataques y empalmados con ventanas suaves. Pueden aparecer artefactos o cierta repetición a pesar del sistema; **ninguna prueba de código garantiza naturalidad auditiva**. Se incluyen demostraciones para escuchar antes de instalar.
 
-1. Abre CSP, elige P y mantén una línea recta de 10 s. Deberías oír un solo inicio, luego silencio cuando el WAV se agote, sin golpes periódicos.
-2. En B o J, dibuja una línea recta de 10 s; no hay reactivaciones. Después pinta de izquierda a derecha y de derecha a izquierda: cada **pasada** significativa puede activar un nuevo roce suave.
-3. En E, repite la prueba anterior. La aplicación solo reacciona a nuevas pasadas, nunca al fin del archivo anterior.
-4. En selección manual, comprueba que cambiar de dirección no reinicia el audio.
+El motor utiliza **PortAudio a través de sounddevice** para generar audio en bloques en tiempo real. Requiere un dispositivo de salida funcional en Windows. Si no se puede iniciar, muestra un error, en lugar de fingir que se está reproduciendo audio.
 
-## Compilar (Windows)
+## Desarrollo
 
-Hay un workflow en `.github/workflows/build-windows.yml` que compila el EXE mediante PyInstaller en GitHub Actions. El corrector `.ps1` suministrado en la conversación aplica el parche, lo publica en `cmezav/kaoru-ink` y descarga el EXE **solo después de la compilación satisfactoria**, con verificación SHA256 y copia de seguridad previa.
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python run.py
+```
 
-Para desarrollo local usa `requirements.txt` y `python -m unittest discover -s tests -v`.
+El workflow `.github/workflows/build-windows.yml` ejecuta los tests y crea `KaoruInk.exe`. Tras publicar un commit, se debe comprobar el resultado de GitHub Actions y la salida de audio con Clip Studio Paint y la tableta reales.

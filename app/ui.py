@@ -147,17 +147,17 @@ class MainWindow(QMainWindow):
         self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P: un sonido por trazo, sin repetición. E: un borrado por trazo. B/J: textura suave que sigue el movimiento y mezcla variantes según dirección, solo mientras coloreas.','muted'))
+        h.addWidget(text('P/B/J/E: sonido continuo ligado al movimiento. Se combinan zonas de las grabaciones reales sin volver a disparar los ataques originales. B/J adapta la mezcla a la dirección del lápiz.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('37 muestras seleccionadas: P (16), B/J (15) y E (6). Los cuatro favoritos de pintura aterciopelada de 1,5 s están protegidos y participan en variación automática. En P los cortos se eligen manualmente para evitar cortes en trazos largos.','muted'))
+        samples.layout().addWidget(text('37 grabaciones: P (16), B/J (15) y E (6). En automático el motor combina fragmentos de las muestras aprobadas mientras te mueves; los cuatro favoritos aterciopelados siguen incluidos. En manual usa solo la grabación elegida como fuente.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
-            ('pencil','01 · P: lápiz','Un sonido real una sola vez. Sin repetir ni generar fricción artificial.', 'pencil_id'),
-            ('brush','02 · B/J: pincel','B y J comparten sonidos. Bucle suave solo al pintar y mover el lápiz.', 'brush_id'),
-            ('eraser','03 · E: borrador','Un sonido real por trazo. Sin repetirlo ni prolongarlo artificialmente.', 'eraser_id')):
+            ('pencil','01 · P: lápiz','Textura continua formada con zonas interiores de varios lápices; responde a la velocidad y la presión disponible.', 'pencil_id'),
+            ('brush','02 · B/J: pincel','B/J: mezcla continua de grabaciones aterciopeladas horizontal/vertical sin reiniciar en cada giro.', 'brush_id'),
+            ('eraser','03 · E: borrador','Roce de borrador continuo basado en fragmentos reales; volumen dinámico y sin cortes al agotarse un WAV.', 'eraser_id')):
 
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
@@ -218,8 +218,8 @@ class MainWindow(QMainWindow):
             self.original_tone_buttons[mode]=restore
             group.addWidget(restore)
             content.addWidget(area)
-        content.addWidget(text('P y E usan una sola muestra por gesto, sin extensiones artificiales. Los clips cortos de lápiz están disponibles manualmente; en automático P sigue prefiriendo 5–8 s para evitar terminar demasiado pronto. B/J mezcla suavemente texturas aterciopeladas con la dirección del cursor.','muted'))
-        self.pressure_status=text('Presión: comprobando compatibilidad de la tableta…','muted')
+        content.addWidget(text('Las tres herramientas ahora usan una textura de fricción en tiempo real formada con fragmentos interiores de los WAV. En automático se emplean distintas grabaciones; no hay un reinicio fijo cada 1,5 segundos. La sensación se debe validar al oído.','muted'))
+        self.pressure_status=text('Presión real: comprobando Wintab…','muted')
         content.addWidget(self.pressure_status)
         body.addWidget(controls)
         options,option_layout=panel()
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.10 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
+        body.addWidget(text('Kaoru Ink 0.13 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
 
@@ -349,10 +349,19 @@ class MainWindow(QMainWindow):
                 if not now:self.audio.stop_all()
                 self._update_status()
             self.controller.tick(self.focused and not self.muted)
-            self.audio.tick()  # Maintain continuous real-sample crossfades while dragging
+            self.audio.tick()  # Audio is rendered by the low-latency PortAudio callback
             if hasattr(self,'pressure_status'):
-                signal='Presión real Wintab' if self.audio.real_pressure else 'Intensidad estimada por movimiento'
-                self.pressure_status.setText('Dinámica activa: '+signal)
+                if self.audio.real_pressure:
+                    signal=f'Presión REAL Wintab: {self.audio.pressure*100:.0f}% · responde al lápiz'
+                else:
+                    diagnostic = self.pressure_monitor.error
+                    reason=(' · Wintab: '+diagnostic[:90]) if diagnostic else ''
+                    history = (f' · recibidas {self.audio.real_packet_count} muestras reales; '
+                               f'última {self.audio.last_real_pressure*100:.0f}%') if self.audio.real_packet_count else ' · sin paquetes de presión real'
+                    signal=f'Intensidad ESTIMADA por movimiento: {self.audio.motion_estimate*100:.0f}%'+history+reason
+                self.pressure_status.setText(signal)
+                if self.audio.stream_error:
+                    self.status.setText('Error de audio: '+self.audio.stream_error[:120])
         except Exception as ex:
             self.status.setText('No se pudo comprobar Clip Studio: '+str(ex))
 

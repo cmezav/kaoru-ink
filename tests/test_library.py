@@ -37,10 +37,11 @@ class LibraryTests(unittest.TestCase):
         self.assertTrue(all(samples[s].get('favorite') for s in expected))
         self.assertTrue(all(s.get('direction_role')=='mezcla_sonica_asignada_no_direccion_documentada' for s in self.samples if s.get('direction')))
 
-    def test_continuation_uses_only_real_original_pitch_clips_without_fixed_loops(self):
+    def test_continuous_texture_uses_original_recordings_without_fixed_wav_loops(self):
         src=(ROOT/'app/audio.py').read_text(encoding='utf8')
-        self.assertIn('class GestureVoice:',src)
-        self.assertIn('loops=0',src)
+        self.assertIn('class GrainBank:',src)
+        self.assertIn('class AudioEngine:',src)
+        self.assertIn('sounddevice',src)
         self.assertNotIn('play(snd, loops=-1',src)
         self.assertNotIn('_continuous_friction',src)
         self.assertNotIn('_sustain_body',src)

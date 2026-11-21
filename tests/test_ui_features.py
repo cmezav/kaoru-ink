@@ -14,6 +14,7 @@ class UIChecks(unittest.TestCase):
         source=(ROOT/'app/main.py').read_text(encoding='utf8')
         self.assertIn('assets/icon.png;assets',workflow)
         self.assertIn("original_png=resource('assets/icon.png')",source)
+        self.assertIn("icon=resource('assets/icon.png')",source)
     def test_separate_panels_and_tone_reset_for_p_b_e(self):
         src=(ROOT/'app/ui.py').read_text(encoding='utf8')
         self.assertIn("self.mix_sliders[setting]=slider",src)

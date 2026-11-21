@@ -37,12 +37,14 @@ class LibraryTests(unittest.TestCase):
         self.assertTrue(all(samples[s].get('favorite') for s in expected))
         self.assertTrue(all(s.get('direction_role')=='mezcla_sonica_asignada_no_direccion_documentada' for s in self.samples if s.get('direction')))
 
-    def test_only_brush_loops(self):
+    def test_continuation_uses_only_real_original_pitch_clips_without_fixed_loops(self):
         src=(ROOT/'app/audio.py').read_text(encoding='utf8')
-        self.assertIn("loops=(-1 if category=='brush' else 0)",src)
+        self.assertIn('class ContinuousLayer:',src)
+        self.assertIn('loops=0',src)
+        self.assertNotIn('play(snd, loops=-1',src)
         self.assertNotIn('_continuous_friction',src)
     def test_source_parses(self):
         for p in (ROOT/'app').glob('*.py'):ast.parse(p.read_text(encoding='utf8'),filename=str(p))
     def test_logo_untouched(self):
-        self.assertEqual(hashlib.sha256((ROOT/'assets/icon.png').read_bytes()).hexdigest(),'cc0b3472c8832cd2cbdfe043a68812f20cd02acf224c58c0870be78e9d862778')
+        self.assertEqual(hashlib.sha256((ROOT/'assets/icon.png').read_bytes()).hexdigest(),'042ce253a146d9b75e77fa68ef5044ba1f4b02d50c53e129c88a4dca4819d34b')
 if __name__=='__main__':unittest.main()

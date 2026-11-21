@@ -9,3 +9,9 @@ La licencia MIT del código no significa que los WAV sean MIT. Antes de distribu
 ## Biblioteca fusionada v0.10
 
 Las 20 nuevas muestras fueron proporcionadas por la persona usuaria desde ElevenLabs. El catálogo conserva el nombre de origen de cada una; no implican licencia de redistribución pública automática. Las versiones importadas solo han recibido conversión a mono/44,1 kHz, ganancia de nivel y, para P/E, un fundido breve al final. No se aplicaron cambios de tono, estiramiento ni generación sintética.
+
+## Cambio v0.11: logo nuevo y audio sostenido
+
+El archivo `assets/icon.png` se copió byte por byte desde el PNG proporcionado por la persona usuaria en esta conversación. SHA256: `042ce253a146d9b75e77fa68ef5044ba1f4b02d50c53e129c88a4dca4819d34b`.
+
+El archivo `assets/icon.ico` se generó automáticamente a partir de esos mismos píxeles únicamente porque el ejecutable de Windows requiere icono de formato ICO. No es otro diseño. Los 37 WAV se mantienen sin cambios: el programa selecciona partes centrales de grabaciones reales al crear transiciones, sin alterar los originales que se conservan en disco.

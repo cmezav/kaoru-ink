@@ -22,7 +22,7 @@ def main():
     app=QApplication(sys.argv)
     app.setApplicationName('Kaoru Ink')
     app.setQuitOnLastWindowClosed(False)
-    icon=resource('assets/icon.ico')  # Windows EXE icon
+    icon=resource('assets/icon.png')  # User's exact unmodified PNG for window and tray  # Windows EXE icon
     original_png=resource('assets/icon.png')  # unmodified user PNG
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
 

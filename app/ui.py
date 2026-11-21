@@ -349,6 +349,7 @@ class MainWindow(QMainWindow):
                 if not now:self.audio.stop_all()
                 self._update_status()
             self.controller.tick(self.focused and not self.muted)
+            self.audio.tick()  # Maintain continuous real-sample crossfades while dragging
             if hasattr(self,'pressure_status'):
                 signal='Presión real Wintab' if self.audio.real_pressure else 'Intensidad estimada por movimiento'
                 self.pressure_status.setText('Dinámica activa: '+signal)

@@ -22,6 +22,7 @@ import numpy as np
 
 RATE = 44100
 MODES = ('pencil', 'brush', 'eraser')
+BRUSH_TWO_STROKE = ('brush_pair_A', 'brush_pair_B', 'brush_pair_C')
 
 
 def _overlap_stretch(data, factor):
@@ -326,7 +327,9 @@ class AudioEngine:
             self.active_desired = desired
             seed = self.rng.randrange(1,2**30)
             if category == 'brush':
-                fast_id = 'brush_fast_velvet_10'
+                # Approved B/J-only two-stroke cycles play as full recordings.
+                # Never turn them into grains or restart them at a direction change.
+                fast_id = desired if desired in BRUSH_TWO_STROKE else 'brush_fast_velvet_10'
                 if fast_id in self.samples and desired in ('auto', fast_id):
                     self.brush_fast_loop = SeamlessBrushLoop(self._processed(fast_id))
                 else:
@@ -375,7 +378,7 @@ class AudioEngine:
             if self.active_mode == 'brush' and self.brush_fast_loop is not None:
                 if self.active_desired == 'auto':
                     self.brush_fast_target = float(np.clip(value, 0., 1.))
-                elif self.active_desired == 'brush_fast_velvet_10':
+                elif self.active_desired in (*BRUSH_TWO_STROKE, 'brush_fast_velvet_10'):
                     self.brush_fast_target = 1.
 
     def set_pressure(self, pressure, real=True):

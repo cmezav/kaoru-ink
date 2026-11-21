@@ -13,7 +13,7 @@ DEFAULTS={
     'volume':76,  # overall safety volume; each tool has independent controls
     'per_tool_controls_v1':True,
     'pencil_id':'auto',
-    'brush_id':'auto',
+    'brush_id':'brush_pair_A',
     'eraser_id':'auto',
 }
 for mode in MODES:
@@ -74,7 +74,14 @@ def load():
     if needs_fusion_auto:
         for mode in MODES:settings[f'{mode}_id']='auto'
     settings['curated_auto_v10']=True
-    if requires_reset or needs_auto or needs_fusion_auto or (saved and saved.get('per_tool_controls_v1') is not True):
+    # v0.15: first launch selects the approved 2-stroke A for B/J only.
+    # Select A once on upgrade, but never reset P/E or future user choices.
+    needs_pair_default = saved.get('brush_pair_default_v15') is not True
+    if needs_pair_default:
+        settings['brush_id'] = 'brush_pair_A'
+    settings['brush_pair_default_v15'] = True
+    if (requires_reset or needs_auto or needs_fusion_auto or needs_pair_default
+            or (saved and saved.get('per_tool_controls_v1') is not True)):
         save(settings)
     return settings
 

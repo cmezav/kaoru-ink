@@ -8,11 +8,12 @@ class LibraryTests(unittest.TestCase):
     def setUpClass(cls):
         cls.samples=json.loads((SOUNDS/'library.json').read_text(encoding='utf8'))['samples']
     def test_catalogue(self):
-        self.assertEqual(len(self.samples),44)
-        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':16,'brush':22,'eraser':6})
-        self.assertEqual(len({s['id'] for s in self.samples}),44)
+        self.assertEqual(len(self.samples),47)
+        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':16,'brush':25,'eraser':6})
+        self.assertEqual(len({s['id'] for s in self.samples}),47)
         self.assertTrue(all(s['source']=='ElevenLabs (usuario)' for s in self.samples))
-        self.assertTrue(all(s['kind']=='curated_real_recording_no_stretch' for s in self.samples))
+        self.assertTrue(all(s['kind']=='curated_real_recording_no_stretch' for s in self.samples if not s['id'].startswith('brush_pair_')))
+        self.assertEqual({s['id'] for s in self.samples if s['id'].startswith('brush_pair_')},{'brush_pair_A','brush_pair_B','brush_pair_C'})
         self.assertTrue(all(s['preview_file']==s['file'] for s in self.samples))
     def test_wavs_duration_and_rate(self):
         for s in self.samples:
@@ -28,7 +29,7 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(len(auto),5)
         self.assertTrue(all(s['duration_sec']>=4.8 for s in auto))
         self.assertTrue(all(s['loop'] is False for s in self.samples if s['category'] != 'brush'))
-        self.assertEqual([s['id'] for s in self.samples if s.get('loop')], ['brush_fast_velvet_10'])
+        self.assertEqual(set(s['id'] for s in self.samples if s.get('loop')), {'brush_fast_velvet_10','brush_pair_A','brush_pair_B','brush_pair_C'})
     def test_four_favorites_are_retained_and_in_automatic_directional_mode(self):
         expected={f'brush_velvet_fav_15_{i:02d}' for i in range(1,5)}
         samples={s['id']:s for s in self.samples}
@@ -37,6 +38,44 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual({samples[s]['direction'] for s in expected},{'horizontal','vertical'})
         self.assertTrue(all(samples[s].get('favorite') for s in expected))
         self.assertTrue(all(s.get('direction_role')=='mezcla_sonica_asignada_no_direccion_documentada' for s in self.samples if s.get('direction')))
+
+    def test_two_stroke_pairs_are_brush_only_and_selected_default_is_fast_A(self):
+        from app import config
+        samples={s['id']:s for s in self.samples}
+        self.assertEqual(config.DEFAULTS['brush_id'],'brush_pair_A')
+        self.assertEqual(config.DEFAULTS['pencil_id'],'auto')
+        self.assertEqual(config.DEFAULTS['eraser_id'],'auto')
+        for pair in ('A','B','C'):
+            item=samples['brush_pair_'+pair]
+            self.assertEqual(item['category'],'brush')
+            self.assertFalse(item['auto_eligible'])
+        self.assertEqual(samples['brush_pair_A']['kind'],'curated_two_stroke_tempo_115_pitch_preserved')
+        self.assertAlmostEqual(samples['brush_pair_A']['duration_sec'],2.75/1.15,delta=.04)
+
+    def test_brush_upgrade_selects_A_without_changing_P_E_preferences(self):
+        from unittest.mock import patch
+        from tempfile import TemporaryDirectory
+        from app import config
+        with TemporaryDirectory() as td:
+            f=Path(td)/'settings.json'
+            old={'curated_auto_v08':True,'curated_auto_v10':True,
+                 'natural_original_v07_1':True,'per_tool_controls_v1':True,
+                 'brush_id':'auto','pencil_id':'pencil_long_07a',
+                 'eraser_id':'eraser_soft_08','brush_volume':73,
+                 'pencil_speed':105,'eraser_volume':35}
+            f.write_text(json.dumps(old))
+            with patch('app.config.config_path',return_value=f):
+                new=config.load()
+                self.assertEqual(new['brush_id'],'brush_pair_A')
+                self.assertEqual(new['pencil_id'],old['pencil_id'])
+                self.assertEqual(new['eraser_id'],old['eraser_id'])
+                self.assertEqual(new['pencil_speed'],105)
+                self.assertEqual(new['eraser_volume'],35)
+                self.assertEqual(new['brush_volume'],73)
+                # Once migrated, respect a later manual B/J selection.
+                new['brush_id']='brush_pair_C'
+                config.save(new)
+                self.assertEqual(config.load()['brush_id'],'brush_pair_C')
 
     def test_continuous_texture_uses_original_recordings_without_fixed_wav_loops(self):
         src=(ROOT/'app/audio.py').read_text(encoding='utf8')

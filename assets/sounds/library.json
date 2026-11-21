@@ -1,8 +1,8 @@
 {
-  "format": 14,
+  "format": 15,
   "sample_rate": 44100,
   "library": "Kaoru Ink - fusion de 17 aprobados + sounds2 + 10 sonidos adjuntos",
-  "behavior": "v0.13 live audio maintained; B/J fast coloring uses seamless 10s loop when quick short reversals detected; pencil/eraser untouched",
+  "behavior": "P/E preserved from v0.14; B/J defaults to approved velvet pair A (tempo 1.15x pitch preserved), pair B/C selectable. Gesture driven volume and Wintab pressure preserved.",
   "samples": [
     {
       "id": "pencil_tap_05a",
@@ -661,6 +661,54 @@
       "source": "ElevenLabs (usuario)",
       "kind": "curated_real_recording_no_stretch",
       "loop": false
+    },
+    {
+      "id": "brush_pair_A",
+      "label": "Terciopelo ida-regreso A ★ predeterminado rápido 1,15×",
+      "category": "brush",
+      "file": "curated/brush_pair_A.wav",
+      "preview_file": "curated/brush_pair_A.wav",
+      "duration_sec": 2.39132,
+      "auto_eligible": false,
+      "favorite": true,
+      "source_filename": "B_J_terciopelo_dos_pasadas_A.wav",
+      "import_note": "Two approved 1.5s recordings; A tempo +15% offline with pitch preserved.",
+      "source": "ElevenLabs (usuario)",
+      "kind": "curated_two_stroke_tempo_115_pitch_preserved",
+      "loop": true,
+      "direction_role": "two_stroke_cycle_no_angle_retrigger"
+    },
+    {
+      "id": "brush_pair_B",
+      "label": "Terciopelo ida-regreso B · suave",
+      "category": "brush",
+      "file": "curated/brush_pair_B.wav",
+      "preview_file": "curated/brush_pair_B.wav",
+      "duration_sec": 2.75,
+      "auto_eligible": false,
+      "favorite": true,
+      "source_filename": "B_J_terciopelo_dos_pasadas_B.wav",
+      "import_note": "Two approved 1.5s recordings; unchanged original tone and tempo.",
+      "source": "ElevenLabs (usuario)",
+      "kind": "curated_two_stroke_joined",
+      "loop": true,
+      "direction_role": "two_stroke_cycle_no_angle_retrigger"
+    },
+    {
+      "id": "brush_pair_C",
+      "label": "Terciopelo ida-regreso C · alternativo",
+      "category": "brush",
+      "file": "curated/brush_pair_C.wav",
+      "preview_file": "curated/brush_pair_C.wav",
+      "duration_sec": 2.75,
+      "auto_eligible": false,
+      "favorite": true,
+      "source_filename": "B_J_terciopelo_dos_pasadas_C.wav",
+      "import_note": "Two approved 1.5s recordings; unchanged original tone and tempo.",
+      "source": "ElevenLabs (usuario)",
+      "kind": "curated_two_stroke_joined",
+      "loop": true,
+      "direction_role": "two_stroke_cycle_no_angle_retrigger"
     }
   ]
 }

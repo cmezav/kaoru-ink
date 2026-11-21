@@ -158,6 +158,32 @@ class PlaybackTests(unittest.TestCase):
         for _ in range(15):self.render(4096)
         self.assertLess(self.engine.brush_fast_mix,.1)
 
+    def test_approved_brush_pair_A_is_a_real_loop_and_does_not_fall_back_to_grains(self):
+        self.assertTrue(self.engine.begin_stroke('brush','brush_pair_A'))
+        self.engine.update_motion(420)
+        self.assertIsNotNone(self.engine.brush_fast_loop)
+        self.assertEqual(self.engine.brush_fast_mix,1.)
+        self.assertEqual(self.engine.brush_fast_target,1.)
+        self.assertEqual(len(self.engine.brush_fast_loop.pcm),self.engine._load_pcm('curated/brush_pair_A.wav').size)
+        for _ in range(round(8*RATE/4096)):
+            self.render(4096)
+        self.assertGreaterEqual(self.engine.brush_fast_loop.wraps,3)
+        self.engine.set_fast_coloring(0.)
+        self.assertEqual(self.engine.brush_fast_target,1.)
+        self.engine.stop_stroke()
+        for _ in range(7): self.render(4096)
+        self.assertIsNone(self.engine.active_mode)
+
+    def test_approved_brush_pairs_B_C_play_in_manual_mode(self):
+        for pair in ('B','C'):
+            self.assertTrue(self.engine.begin_stroke('brush','brush_pair_'+pair))
+            self.engine.update_motion(360)
+            for _ in range(round(3.5*RATE/4096)): self.render(4096)
+            self.assertGreater(self.engine.brush_fast_loop.wraps,0)
+            self.engine.stop_stroke()
+            for _ in range(7):self.render(4096)
+            self.assertIsNone(self.engine.active_mode)
+
     def test_only_brush_uses_long_loop_and_preserves_p_e(self):
         self.engine.begin_stroke('pencil','auto')
         self.assertIsNone(self.engine.brush_fast_loop)

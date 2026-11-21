@@ -42,3 +42,11 @@ Se añadieron 6 muestras nuevas de B/J como opciones manuales de pintura. La mue
 Se normalizaron mediante **ganancia fija** los 15 sonidos anteriores de B/J y los 7 nuevos a un nivel cercano a −28 dBFS RMS, limitando los picos a −7 dBFS. No se aplicó compresor, cambio tonal o filtro. P y E no recibieron ningún cambio de volumen. Los niveles registrados están en `AUDIO_NIVELES_B.csv`.
 
 Se verificaron pruebas de la lógica con simulaciones; el comportamiento real de la tableta, los movimientos y la naturalidad de la unión deben probarse en Windows / Clip Studio Paint. El loop es un ciclo de audio reutilizado y puede resultar perceptible después de escucharlo repetidamente; no se promete variación infinita.
+
+## v0.15 — 3 ciclos B/J de dos pasadas (exclusivamente pintura)
+
+- Opción **A** predeterminada para B/J en el primer inicio de v0.15; reúne los favoritos 1 y 2. Velocidad del audio un 15 % mayor, preservando la altura tonal mediante Rubber Band antes de empaquetar. Duración aproximada del ciclo: 2,39 s.
+- Opciones **B** (favoritos 3 y 4) y **C** (favoritos 1 y 4) disponibles para elegir manualmente. Ambas mantienen su duración original de 2,75 s.
+- En B/J, los tres ciclos se reproducen completos como material aprobado y siguen la compuerta de movimiento y la presión que ya existían. No se reinician al cambiar de dirección.
+- **P/E no han cambiado**, ni su motor ni sus archivos de sonido. Tampoco se modificaron los iconos ni sus ajustes.
+- La opción `Variar automáticamente` sigue disponible; al seleccionar A, B o C se oye el ciclo elegido de forma explícita.

@@ -8,9 +8,10 @@ DEFAULTS={
     'start_at_login':True,
     'close_to_tray':True,
     'volume':76,
-    'speed':55,
+    'speed':100,
     'pitch':0,
     'brightness':0,
+    'natural_audio_v1':True,
     'dynamics':70,
     'pencil_volume':100,
     'brush_volume':100,
@@ -27,13 +28,18 @@ def config_path():
 
 def load():
     settings=DEFAULTS.copy()
+    migrate=False
     try:
         saved=json.loads(config_path().read_text(encoding='utf8'))
         if isinstance(saved,dict):
+            migrate=(saved.get('natural_audio_v1') is not True)
             for key in DEFAULTS:
                 if key in saved and isinstance(saved[key],type(DEFAULTS[key])):
                     settings[key]=saved[key]
     except (OSError,ValueError):pass
+    if migrate:
+        # Old 0.55x processing destroyed the original sound color. Reset once.
+        settings.update(speed=100,pitch=0,brightness=0,natural_audio_v1=True)
     settings['volume']=max(0,min(100,settings['volume']))
     settings['speed']=max(45,min(120,settings['speed']))
     settings['pitch']=max(-8,min(8,settings['pitch']))
@@ -45,6 +51,8 @@ def load():
     for key in ('pencil_id','brush_id','eraser_id'):
         if not (settings[key]=='auto' or settings[key].startswith(key[:-3]+'_')):
             settings[key]=DEFAULTS[key]
+    if migrate:
+        save(settings)
     return settings
 
 def save(settings):

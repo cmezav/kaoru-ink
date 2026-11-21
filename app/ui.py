@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
         self.eraser_button.setObjectName('mode');self.eraser_button.setCheckable(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P y E: un roce sostenido por trazo. B: un bucle continuo que solo se oye mientras mueves el pincel. Sin clics nuevos al continuar una línea.','muted'))
+        h.addWidget(text('P y E: una grabación original por trazo (duración limitada por el archivo). B: la grabación original en bucle suave mientras pintas.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
@@ -158,9 +158,9 @@ class MainWindow(QMainWindow):
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
-            ('pencil','01 · P: lápiz','Un contacto de lápiz por trazo. La fricción continúa sin repetición.', 'pencil_id'),
+            ('pencil','01 · P: lápiz','Una grabación original por trazo; sin ruido sintético ni repeticiones.', 'pencil_id'),
             ('brush','02 · B: pincel','Bucle suave solo mientras mueves el mouse al pintar.', 'brush_id'),
-            ('eraser','03 · E: borrador','Borrar con una sola fricción, hasta soltar el mouse.', 'eraser_id')):
+            ('eraser','03 · E: borrador','Borrado original: una sola reproducción sin bucle.', 'eraser_id')):
 
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
@@ -184,7 +184,7 @@ class MainWindow(QMainWindow):
         body.addWidget(samples)
         controls,content=panel()
         content.addWidget(text('Mesa de sonido · ajusta a tu gusto','headline'))
-        content.addWidget(text('Velocidad cambia cuánto dura el trazo; Tono ajusta la altura del sonido sin cambiar su duración. Brillo realza o suaviza los agudos.','muted'))
+        content.addWidget(text('Tono original: Velocidad 1,00×, Tono 0, Brillo 0. Los efectos opcionales pueden alterar la textura del sonido.','muted'))
         self.mix_sliders={}
         self.mix_labels={}
         mix_specs=[
@@ -214,6 +214,9 @@ class MainWindow(QMainWindow):
                 grid.addLayout(col,1)
                 self._mix_value_label(key,self.settings[key])
             content.addLayout(grid)
+        self.original_tone_button=QPushButton('Restaurar tono original · 1,00× / 0 st / 0 agudos')
+        self.original_tone_button.setObjectName('secondary')
+        content.addWidget(self.original_tone_button)
         content.addWidget(text('Dinámica: con tableta Wintab compatible se intenta leer presión real; de lo contrario se estima la intensidad con la velocidad del cursor (no es presión física). En pausas B queda en silencio.','muted'))
         self.pressure_status=text('Presión: comprobando compatibilidad de la tableta…','muted')
         content.addWidget(self.pressure_status)
@@ -228,7 +231,7 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.5 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
+        body.addWidget(text('Kaoru Ink 0.6 · Solo Windows · Clip Studio Paint debe estar al frente.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
 
@@ -260,6 +263,7 @@ class MainWindow(QMainWindow):
             self.preview_buttons[category].clicked.connect(lambda _,c=category:self._preview(c))
         for key,slider in self.mix_sliders.items():
             slider.valueChanged.connect(lambda val,k=key:self._mix_change(k,val))
+        self.original_tone_button.clicked.connect(self._restore_original_tone)
         self.start_check.toggled.connect(self._start_change)
         self.close_check.toggled.connect(self._close_change)
 
@@ -277,6 +281,11 @@ class MainWindow(QMainWindow):
         elif key=='pitch':label=f'{value:+d} st'
         else:label=f'{value} %'
         self.mix_labels[key].setText(label)
+
+    def _restore_original_tone(self):
+        for key,value in (('speed',100),('pitch',0),('brightness',0)):
+            self.mix_sliders[key].setValue(value)
+        self.status.setText('Sonido original restaurado: sin efectos de tono ni velocidad.')
 
     def _mix_change(self,key,value):
         self._mix_value_label(key,value)

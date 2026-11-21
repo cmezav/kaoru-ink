@@ -1,8 +1,6 @@
-"""Mouse/stylus painting audio. Only B loops, and only while moving.
-
-P/E are one-shot non-retriggering sounds. Pitch is independently adjustable
-from duration; pressure volume is true Wintab pressure where available, or an
-explicitly labelled motion-based estimate when not.
+"""Natural source recordings. Only B loops and only during a mouse stroke.
+P/E play one original recording per drag; no artificial spectral noise beds.
+At 1.00x and zero effects, the 44.1 kHz source PCM is fed unchanged to mixer.
 """
 import json
 import random
@@ -15,8 +13,8 @@ import numpy as np
 def _overlap_stretch(data, factor):
     """Short-time overlap/add stretch of broadband drawing textures.
 
-    No restarting or re-attacking a recorded stroke; the original samples
-    include a single contact followed by a long synthetic friction texture.
+    Optional time stretching for explicit manual adjustments only.
+    The default 1.00x bypass avoids this transform entirely.
     """
     factor=float(np.clip(factor,.32,4.0))
     if abs(factor-1.)<.015:return data
@@ -38,60 +36,39 @@ def _overlap_stretch(data, factor):
 
 
 def _pitch_and_speed(data, speed, pitch, brightness):
-    """Pitch adjustment (semitones) and time adjustment are independent.
+    """Natural 44.1 kHz playback is byte-identical at neutral settings.
 
-    Operates at source 22.05 kHz, then upsamples to the fixed 44.1 kHz mixer.
-    Broadband noise beds tolerate OLA stretching particularly well.
+    Deliberate manual effects are optional. Speed-only changes use lightweight
+    overlap/add processing and can color the sound: use 100% for original.
     """
+    if speed==100 and pitch==0 and brightness==0:
+        return data  # absolutely no time-stretch, EQ, interpolation or retuning
     x=data.astype('float32')/32768.
-    semitone=float(pitch)
-    p=2.**(semitone/12.)
+    p=2.**(float(pitch)/12.)
     if abs(p-1.)>.003:
         target=max(8,int(len(x)/p))
         x=np.interp(np.arange(target,dtype='float32')*p,np.arange(len(x)),x).astype('float32')
     x=_overlap_stretch(x,p/(speed/100.))
     if brightness:
-        # Gentle high shelf: brightness does not modify fundamental frequency.
         low=np.convolve(x,np.ones(11,dtype='float32')/11.,mode='same')
-        high=x-low
-        x=low+high*(1.+brightness/100.*.70)
-    # Mixer frequency is twice WAV rate.
-    dest=np.arange(len(x)*2,dtype='float32')*.5
-    y=np.interp(dest,np.arange(len(x)),x).astype('float32')
-    return (np.clip(y,-.96,.96)*32767).astype('<i2')
+        x=low+(x-low)*(1.+brightness/100.*.70)
+    return (np.clip(x,-.999,.999)*32767).astype('<i2')
 
 
-def _brush_loop(pcm, rate=22050):
-    """Build a seamless *brush-only* texture, excluding the contact onset.
-
-    Preserve one playback for the whole mouse-down, even while paused.
-    """
-    start=int(.85*rate); stop=int(6.8*rate)
-    body=pcm[start:stop].copy().astype('float32')
-    if len(body)<rate:body=pcm.copy().astype('float32')
-    overlap=min(int(.15*rate),len(body)//5)
-    if overlap:
+def _brush_loop(pcm, rate=44100):
+    """Crossfade a real brush recording into a seamless loop; no fake noise."""
+    # Skip the very first touch so it is not replayed with every loop.
+    start=min(int(.045*rate),len(pcm)//6)
+    body=pcm[start:].astype('float32').copy()
+    if len(body)<800:return pcm
+    overlap=min(int(.09*rate),len(body)//5)
+    if overlap>0:
         t=np.linspace(0,1,overlap,dtype='float32')
-        # Crossfade tail into the *preceding* samples of the next loop.
-        # Drop those preceding samples so the loop seam is between two
-        # consecutive source samples, avoiding a discontinuity/click.
         tail=body[-overlap:].copy()
         head=body[:overlap].copy()
-        body=body[overlap:].copy()
+        body=body[overlap:]
         body[-overlap:]=tail*(1-t)+head*t
-    return body.astype('<i2')
-
-
-def _finish_loop(pcm,rate=44100):
-    """Make the finished, pitch-shifted B stream join without a seam click."""
-    n=min(int(.12*rate),len(pcm)//5)
-    if n<8:return pcm
-    x=pcm.astype('float32')
-    t=np.linspace(0,1,n,dtype='float32')
-    tail=x[-n:].copy();head=x[:n].copy()
-    x=x[n:].copy()
-    x[-n:]=tail*(1-t)+head*t
-    return np.clip(x,-32768,32767).astype('<i2')
+    return np.clip(body,-32768,32767).astype('<i2')
 
 
 class AudioEngine:
@@ -111,7 +88,7 @@ class AudioEngine:
         self.by_category={cat:[s['id'] for s in library['samples'] if s['category']==cat] for cat in self.MODES}
         if any(not self.by_category[c] for c in self.MODES):raise ValueError('Missing samples for a P/B/E tool')
         self.last_random={};self.cache={};self.active_mode=None
-        self.volume=.76;self.speed=55;self.pitch=0;self.brightness=0
+        self.volume=.76;self.speed=100;self.pitch=0;self.brightness=0
         self.dynamic=70;self.tool_volumes={m:100 for m in self.MODES}
         self.muted=False
         self.motion_gate=.0;self.pressure=0.5;self.motion_estimate=.5
@@ -127,8 +104,8 @@ class AudioEngine:
 
     def _load_pcm(self,filename):
         with wave.open(str(self.folder/filename),'rb') as wav:
-            if (wav.getnchannels(),wav.getsampwidth(),wav.getframerate())!=(1,2,22050):
-                raise ValueError('Expected mono 16-bit 22,050 Hz WAV: '+filename)
+            if (wav.getnchannels(),wav.getsampwidth(),wav.getframerate())!=(1,2,44100):
+                raise ValueError('Expected mono 16-bit 44,100 Hz WAV: '+filename)
             return np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2')
 
     def _sound(self,ident,kind):
@@ -138,7 +115,6 @@ class AudioEngine:
             pcm=self._load_pcm(sample['preview_file' if kind=='preview' else 'file'])
             if kind=='loop':pcm=_brush_loop(pcm)
             pcm=_pitch_and_speed(pcm,self.speed,self.pitch,self.brightness)
-            if kind=='loop':pcm=_finish_loop(pcm)
             if len(self.cache)>=6:self.cache.clear()
             self.cache[key]=self.pg.mixer.Sound(buffer=pcm.tobytes())
         return self.cache[key]

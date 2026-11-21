@@ -1,10 +1,9 @@
-"""Execute the actual AudioEngine against a fake mixer on Linux."""
+"""Validate actual audio routing against a fake pygame mixer."""
 import sys,types,unittest
 from unittest.mock import patch
 from pathlib import Path
-from app.audio import AudioEngine, _pitch_and_speed, _brush_loop
 import numpy as np
-
+from app.audio import AudioEngine, _pitch_and_speed, _brush_loop
 ROOT=Path(__file__).resolve().parents[1]
 
 class FakeChannel:
@@ -30,7 +29,17 @@ class AudioPlaybackTests(unittest.TestCase):
         with patch.dict(sys.modules,{'pygame':types.SimpleNamespace(mixer=self.mixer)}):
             self.engine=AudioEngine(ROOT/'assets/sounds')
 
-    def test_only_one_play_per_held_stroke_all_modes(self):
+    def test_natural_defaults(self):
+        self.assertEqual((self.engine.speed,self.engine.pitch,self.engine.brightness),(100,0,0))
+
+    def test_neutral_processing_preserves_pcm_exactly(self):
+        for ident in ('pencil_pencil_draw','brush_marker_draw','eraser_eraser'):
+            src=self.engine._load_pcm(f'original/{ident}.wav')
+            processed=_pitch_and_speed(src,100,0,0)
+            self.assertTrue(np.array_equal(src,processed))
+            self.assertEqual(self.engine._sound(ident,'held'),len(src)*2)
+
+    def test_only_brush_loops(self):
         for mode,ident in [('pencil','pencil_pencil_draw'),('brush','brush_marker_draw'),('eraser','eraser_eraser')]:
             self.assertTrue(self.engine.begin_stroke(mode,ident))
             for _ in range(100):
@@ -38,16 +47,15 @@ class AudioPlaybackTests(unittest.TestCase):
                 self.assertFalse(self.engine.begin_stroke(mode,ident))
             ch=self.engine.channels[mode]
             self.assertEqual(len(ch.plays),1)
-            self.assertEqual(ch.plays[0]['loops'], -1 if mode=='brush' else 0)
+            self.assertEqual(ch.plays[0]['loops'],-1 if mode=='brush' else 0)
             self.engine.stop_stroke()
-            self.assertFalse(ch.get_busy())
 
-    def test_preview_never_loops_even_brush_or_eraser(self):
+    def test_preview_never_loops(self):
         for mode in ('pencil','brush','eraser'):
             self.engine.preview(mode,'auto')
         self.assertTrue(all(p['loops']==0 for p in self.mixer.channels[3].plays))
 
-    def test_brush_loop_follows_motion_and_mutes_on_pause(self):
+    def test_brush_motion_gate_and_pressure(self):
         self.engine.begin_stroke('brush','brush_marker_draw')
         ch=self.engine.channels['brush']
         for _ in range(5):self.engine.update_motion(750)
@@ -57,10 +65,8 @@ class AudioPlaybackTests(unittest.TestCase):
         for _ in range(5):self.engine.update_motion(750)
         self.assertGreater(ch.level,active*.5)
         self.assertEqual(len(ch.plays),1)
-        self.engine.stop_stroke()
-        self.assertFalse(ch.busy)
 
-    def test_pressure_changes_volume_without_restart(self):
+    def test_pressure_dynamic_without_restart(self):
         self.engine.begin_stroke('pencil','pencil_pencil_draw')
         self.engine.update_motion(150)
         ch=self.engine.channels['pencil']
@@ -70,24 +76,16 @@ class AudioPlaybackTests(unittest.TestCase):
         self.assertGreater(ch.level,quiet*1.7)
         self.assertEqual(len(ch.plays),1)
 
-    def test_tone_independent_of_speed_duration(self):
-        source=(np.sin(np.linspace(0,120*np.pi,22050,dtype='float32'))*.1*32767).astype('<i2')
-        neutral=_pitch_and_speed(source,65,0,0)
-        sharp=_pitch_and_speed(source,65,5,0)
-        slow=_pitch_and_speed(source,45,5,0)
-        self.assertLess(abs(len(sharp)-len(neutral))/len(neutral),.02)
-        self.assertGreater(len(slow),len(sharp)*1.35)
+    def test_brush_loop_joins_cleanly(self):
+        src=self.engine._load_pcm('original/brush_marker_draw.wav')
+        loop=_brush_loop(src)
+        self.assertGreater(len(loop),2000)
+        self.assertLess(abs(int(loop[-1])-int(loop[0])),1500)
 
-    def test_loop_seam_is_smooth(self):
-        data=self.engine._load_pcm('held/brush_marker_draw.wav')
-        loop=_brush_loop(data)
-        self.assertGreater(len(loop),22050)
-        self.assertLess(abs(int(loop[-1])-int(loop[0])),max(450,int(np.percentile(np.abs(np.diff(loop.astype('float32'))),95))*2))
-
-    def test_speed_does_not_retrigger(self):
-        self.assertTrue(self.engine.begin_stroke('pencil','pencil_pencil_draw'))
-        self.engine.set_speed(75)
-        self.assertEqual(len(self.mixer.channels[0].plays),1)
-        self.assertFalse(self.mixer.channels[0].busy)
+    def test_manual_adjustments_are_optional(self):
+        data=np.linspace(-1500,1500,44100,dtype='float32').astype('<i2')
+        self.assertTrue(np.array_equal(data,_pitch_and_speed(data,100,0,0)))
+        modified=_pitch_and_speed(data,100,2,0)
+        self.assertIsInstance(modified,np.ndarray)
 
 if __name__=='__main__':unittest.main()

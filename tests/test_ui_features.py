@@ -14,6 +14,13 @@ class UIChecks(unittest.TestCase):
         source=(ROOT/'app/main.py').read_text(encoding='utf8')
         self.assertIn('assets/icon.png;assets',workflow)
         self.assertIn("original_png=resource('assets/icon.png')",source)
+    def test_one_click_restore_original_tone(self):
+        src=(ROOT/'app/ui.py').read_text(encoding='utf8')
+        self.assertIn('def _restore_original_tone(self):',src)
+        self.assertIn("('speed',100)",src)
+        self.assertIn("('pitch',0)",src)
+        self.assertIn("('brightness',0)",src)
+
     def test_effect_settings_persist(self):
         src=(ROOT/'app/config.py').read_text(encoding='utf8')
         tree=ast.parse(src)

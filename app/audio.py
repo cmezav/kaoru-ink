@@ -183,6 +183,32 @@ class GrainBank:
         return out
 
 
+class SeamlessBrushLoop:
+    """Read a long, already seam-crossfaded recording as one continuous loop.
+
+    Unlike the real-time GrainBank, this keeps the chosen 10-second recording
+    intact. This is used ONLY for rapid coloring in the brush mode.
+    """
+
+    def __init__(self, pcm):
+        self.pcm = np.ascontiguousarray(pcm, dtype='float32')
+        if len(self.pcm) < 128:
+            raise ValueError('Brush loop audio is too short')
+        self.cursor = 0
+        self.wraps = 0
+
+    def render(self, frames):
+        if frames <= 0:
+            return np.zeros(0, dtype='float32')
+        n = len(self.pcm)
+        positions = (np.arange(frames, dtype=np.int64) + self.cursor) % n
+        self.cursor += frames
+        if self.cursor >= n:
+            self.wraps += self.cursor // n
+            self.cursor %= n
+        return self.pcm[positions]
+
+
 class AudioEngine:
     """UI-facing streaming engine. The audio callback owns timeline progression."""
     MODES = MODES
@@ -205,6 +231,12 @@ class AudioEngine:
         self.active_mode = None
         self.active_desired = 'auto'
         self.banks = {}
+        # B/J ONLY: long natural loop fades in when short quick coloring
+        # gestures are detected. P and E do not use this playback path.
+        self.brush_fast_loop = None
+        self.brush_fast_mix = 0.
+        self.brush_fast_target = 0.
+        self.brush_release_at = -1e9
         self.motion_gate = 0.
         self.motion_target = 0.
         self.releasing = False
@@ -282,14 +314,31 @@ class AudioEngine:
         with self.lock:
             if self.active_mode is not None and not self.releasing:
                 return False
+            # If consecutive short brush passes are separated by less than
+            # 180 ms, resume the existing texture instead of starting over.
+            # This special case NEVER applies to the pencil or eraser.
+            if (category == 'brush' and self.active_mode == 'brush'
+                    and self.releasing and desired == self.active_desired
+                    and self.clock() - self.brush_release_at <= .18):
+                self.releasing = False
+                self.motion_target = 0.
+                return True
             self.active_desired = desired
             seed = self.rng.randrange(1,2**30)
             if category == 'brush':
+                fast_id = 'brush_fast_velvet_10'
+                if fast_id in self.samples and desired in ('auto', fast_id):
+                    self.brush_fast_loop = SeamlessBrushLoop(self._processed(fast_id))
+                else:
+                    self.brush_fast_loop = None
+                self.brush_fast_mix = 1. if desired == fast_id else 0.
+                self.brush_fast_target = self.brush_fast_mix
                 self.banks = {
                     'horizontal': self._new_bank(category,desired,'horizontal',seed),
                     'vertical': self._new_bank(category,desired,'vertical',seed+1),
                 }
             else:
+                self.brush_fast_loop = None
                 self.banks = {'main':self._new_bank(category,desired,seed=seed)}
             self.active_mode = category
             self.motion_gate = 0.
@@ -319,6 +368,15 @@ class AudioEngine:
                 return False
             self.axis_target = 1. if axis == 'vertical' else 0.
         return True
+
+    def set_fast_coloring(self, value):
+        """Only B/J: a gesture-based 0..1 target, not a timing loop trigger."""
+        with self.lock:
+            if self.active_mode == 'brush' and self.brush_fast_loop is not None:
+                if self.active_desired == 'auto':
+                    self.brush_fast_target = float(np.clip(value, 0., 1.))
+                elif self.active_desired == 'brush_fast_velvet_10':
+                    self.brush_fast_target = 1.
 
     def set_pressure(self, pressure, real=True):
         with self.lock:
@@ -350,6 +408,16 @@ class AudioEngine:
                 self.axis_mix = next_axis
                 # Equal-power pans avoid dips when switching directions.
                 result = np.sqrt(1.-axis)*h + np.sqrt(axis)*v
+                if self.brush_fast_loop is not None:
+                    # Long loop advances even when nearly silent, avoiding
+                    # a new start sound on each quick reverse or pen lift.
+                    fast = self.brush_fast_loop.render(frames)
+                    tau_fast = .11 if self.brush_fast_target > self.brush_fast_mix else .23
+                    a = 1. - math.exp(-frames / (RATE * tau_fast))
+                    next_fast = self.brush_fast_mix + (self.brush_fast_target - self.brush_fast_mix)*a
+                    blend = np.linspace(self.brush_fast_mix, next_fast, frames, dtype='float32')
+                    self.brush_fast_mix = next_fast
+                    result = np.sqrt(1.-blend)*result + np.sqrt(blend)*fast
             else:
                 result = self.banks['main'].render(frames)
             tau = .045 if self.motion_target > self.motion_gate else .11
@@ -365,6 +433,7 @@ class AudioEngine:
             if self.releasing and self.motion_gate < .012:
                 self.active_mode = None
                 self.banks = {}
+                self.brush_fast_loop = None
                 self.releasing = False
         if self.preview_pcm is not None:
             left = len(self.preview_pcm)-self.preview_pos
@@ -406,6 +475,8 @@ class AudioEngine:
             if self.active_mode is not None:
                 self.motion_target = 0.
                 self.releasing = True
+                if self.active_mode == 'brush':
+                    self.brush_release_at = self.clock()
 
     def stop_all(self):
         with self.lock:

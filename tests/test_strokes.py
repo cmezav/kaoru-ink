@@ -1,11 +1,12 @@
 """Verify every mouse drag fires exactly one event for P/B/E."""
 import ast,math,time,unittest
+from collections import deque
 from unittest.mock import patch
 from pathlib import Path
 SRC=Path(__file__).resolve().parents[1]/'app'/'input_monitor.py'
 parsed=ast.parse(SRC.read_text(encoding='utf8'),filename=str(SRC))
 cls=next(n for n in parsed.body if isinstance(n,ast.ClassDef) and n.name=='StrokeController')
-ns={'time':time,'hypot':math.hypot}
+ns={'time':time,'hypot':math.hypot,'deque':deque}
 exec(compile(ast.Module(body=[cls],type_ignores=[]),str(SRC),'exec'),ns)
 StrokeController=ns['StrokeController']
 
@@ -107,3 +108,35 @@ class StrokeTests(unittest.TestCase):
         self.assertIn("'j':'brush'",SRC.read_text(encoding='utf8'))
 
 if __name__=='__main__':unittest.main()
+
+
+class BrushFastTests(unittest.TestCase):
+    def setUp(self):
+        self.audio=FakeAudio()
+        self.audio.fast=[]
+        self.audio.direction=[]
+        self.audio.update_direction=lambda *args:self.audio.direction.append(args)
+        self.audio.set_fast_coloring=lambda x:self.audio.fast.append(x)
+        self.audio.turns=[]
+        self.ctrl=StrokeController(self.audio,{'pencil_id':'auto','brush_id':'auto','eraser_id':'auto'})
+        self.ctrl.change_mode('brush')
+
+    def test_two_small_reversals_activate_fast_loop(self):
+        self.ctrl.mouse_down(0,0)
+        for x in (15,35,20,4,18,35,20,5):
+            self.ctrl.mouse_move(x,0)
+        self.assertTrue(any(value>0.9 for value in self.audio.fast))
+        self.assertEqual(len(self.audio.begins),1)
+
+    def test_straight_fast_motion_does_not_look_like_coloring(self):
+        self.ctrl.mouse_down(0,0)
+        for x in range(20,1000,20):self.ctrl.mouse_move(x,0)
+        self.assertTrue(self.audio.fast)
+        self.assertTrue(all(x==0 for x in self.audio.fast))
+
+    def test_three_short_drags_activate_fast_loop(self):
+        for i in range(3):
+            self.ctrl.mouse_down(0,0)
+            self.ctrl.mouse_move(22,0)
+            self.ctrl.mouse_up()
+        self.assertIn(1.,self.audio.fast)

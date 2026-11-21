@@ -29,3 +29,16 @@ python run.py
 ```
 
 El workflow `.github/workflows/build-windows.yml` ejecuta los tests y crea `KaoruInk.exe`. Tras publicar un commit, se debe comprobar el resultado de GitHub Actions y la salida de audio con Clip Studio Paint y la tableta reales.
+
+
+## v0.14 — Solo B/J: coloreado rápido y volumen nivelado (sin cambios P/E)
+
+Esta versión **conserva exactamente el comportamiento y los 16 WAV de P, los 6 WAV de E, sus controles y la captura Wintab**. Mantiene el PNG del icono byte por byte.
+
+Se añade el audio original de 10 segundos aportado por la persona usuaria para una textura de coloreado rápido: se niveló su volumen y se unieron los extremos mediante un fundido cruzado de 480 ms, quedando un ciclo de ~9,52 s. La reproducción mantiene su tono natural, sin síntesis de ruido ni cambio de velocidad. El loop se utiliza **solo en B/J** y **solo cuando se detectan pequeñas inversiones rápidas de dirección o varios trazos pequeños seguidos**. Los trazos rectos de alta velocidad no lo activan por sí solos. La mezcla entre coloreado normal y rápido tiene transiciones graduales; el volumen sigue la velocidad/pausas y la presión disponible de la tableta.
+
+Se añadieron 6 muestras nuevas de B/J como opciones manuales de pintura. La muestra de 10 s queda también disponible como selección manual: en ese caso el bucle permanece activo mientras mueves el lápiz. El modo automático conserva las variantes anteriores para coloreado normal y activa la nueva muestra larga al reconocer coloreado rápido.
+
+Se normalizaron mediante **ganancia fija** los 15 sonidos anteriores de B/J y los 7 nuevos a un nivel cercano a −28 dBFS RMS, limitando los picos a −7 dBFS. No se aplicó compresor, cambio tonal o filtro. P y E no recibieron ningún cambio de volumen. Los niveles registrados están en `AUDIO_NIVELES_B.csv`.
+
+Se verificaron pruebas de la lógica con simulaciones; el comportamiento real de la tableta, los movimientos y la naturalidad de la unión deben probarse en Windows / Clip Studio Paint. El loop es un ciclo de audio reutilizado y puede resultar perceptible después de escucharlo repetidamente; no se promete variación infinita.

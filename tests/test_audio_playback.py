@@ -140,4 +140,44 @@ class PlaybackTests(unittest.TestCase):
         for _ in range(200):self.render(1024)
         self.assertEqual(self.engine.banks['main'].used_ids,{ident})
 
+    def test_fast_brush_10s_loops_without_retriggering_p_e(self):
+        self.engine.begin_stroke('brush','auto')
+        self.engine.update_motion(500)
+        bank=self.engine.banks['horizontal']
+        self.assertIsNotNone(self.engine.brush_fast_loop)
+        self.engine.set_fast_coloring(1.)
+        tail=[]
+        for i in range(round(23*RATE/4096)):
+            block=self.render(4096)
+            if i>round(21*RATE/4096):tail.append(block)
+        self.assertGreater(self.engine.brush_fast_loop.wraps,1)
+        self.assertGreater(self.engine.brush_fast_mix,.98)
+        self.assertIs(self.engine.banks['horizontal'],bank)
+        self.assertGreater(np.sqrt(np.mean(np.concatenate(tail)**2)),.001)
+        self.engine.set_fast_coloring(0.)
+        for _ in range(15):self.render(4096)
+        self.assertLess(self.engine.brush_fast_mix,.1)
+
+    def test_only_brush_uses_long_loop_and_preserves_p_e(self):
+        self.engine.begin_stroke('pencil','auto')
+        self.assertIsNone(self.engine.brush_fast_loop)
+        self.engine.stop_stroke()
+        for _ in range(7):self.render(4096)
+        self.engine.begin_stroke('eraser','auto')
+        self.assertIsNone(self.engine.brush_fast_loop)
+        self.engine.stop_stroke()
+        for _ in range(7):self.render(4096)
+
+    def test_quick_brush_reactivation_keeps_same_fast_loop_position(self):
+        self.engine.begin_stroke('brush','auto')
+        self.engine.update_motion(400)
+        self.engine.set_fast_coloring(1.)
+        for _ in range(7):self.render(4096)
+        sound=self.engine.brush_fast_loop
+        pos=sound.cursor
+        self.engine.stop_stroke()
+        self.assertTrue(self.engine.begin_stroke('brush','auto'))
+        self.assertIs(self.engine.brush_fast_loop,sound)
+        self.assertGreaterEqual(sound.cursor,pos)
+
 if __name__=='__main__':unittest.main()

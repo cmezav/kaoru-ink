@@ -1,6 +1,7 @@
 """Clip Studio Paint-only mouse drags and P/B/J/E shortcut recognition."""
 import time
 from math import hypot
+from collections import deque
 from PySide6.QtCore import QObject, Signal
 from .focus import foreground_paint
 
@@ -93,6 +94,13 @@ class StrokeController:
         self.turn_candidate=None
         self.turn_candidate_distance=0.
         self.last_turn_time=0.
+        # B/J only: short quick passes, not just high cursor velocity.
+        self.brush_reversals=deque(maxlen=24)
+        self.brush_short_strokes=deque(maxlen=24)
+        self.brush_last_vector=None
+        self.brush_run_distance=0.
+        self.brush_fast_until=0.
+        self.brush_stroke_started_at=0.
 
     def change_mode(self,mode):
         if mode not in ('pencil','brush','eraser'):return
@@ -101,6 +109,10 @@ class StrokeController:
             self.mode=mode
             self.active=False
             self.started=False
+            if mode != 'brush':
+                self.brush_reversals.clear()
+                self.brush_short_strokes.clear()
+                self.brush_fast_until=0.
 
     def mouse_down(self,x,y):
         self.audio.stop_stroke()
@@ -108,6 +120,10 @@ class StrokeController:
         self.started=False
         self.last_point=(x,y)
         self.last_motion=time.monotonic()
+        if self.mode == 'brush':
+            self.brush_stroke_started_at=self.last_motion
+            self.brush_last_vector=None
+            self.brush_run_distance=0.
         self.last_tick_motion=self.last_motion
         self.travel=0.
         self.pass_axis=None
@@ -133,10 +149,42 @@ class StrokeController:
             self.audio.begin_stroke(self.mode,self.settings[self.mode+'_id'])
         if self.started:
             self.audio.update_motion(dist/dt)
-            if self.mode=='brush' and hasattr(self.audio,'update_direction'):
-                self.audio.update_direction(dx,dy)
+            if self.mode=='brush':
+                if hasattr(self.audio,'update_direction'):
+                    self.audio.update_direction(dx,dy)
+                self._detect_fast_coloring(dx,dy,dist,now)
             if self.mode in ('brush','eraser'):
                 self._detect_new_pass(dx,dy,dist,now)
+
+    def _detect_fast_coloring(self,dx,dy,dist,now):
+        """Recognize tiny rapid coloring reversals or short repeated passes.
+
+        Straight fast pencil-like sweeps should remain normal B/J, since a
+        high pixel speed by itself does NOT imply filling/coloring.
+        """
+        if self.brush_last_vector is not None:
+            ox,oy=self.brush_last_vector
+            oldmag=hypot(ox,oy)
+            # Significant direction reversal after a short 9..95px pass.
+            dot=dx*ox+dy*oy
+            if (oldmag >= 2 and dist >= 2
+                    and dot < -.60*dist*oldmag):
+                if 9 <= self.brush_run_distance <= 95:
+                    self.brush_reversals.append(now)
+                self.brush_run_distance=dist
+            else:
+                self.brush_run_distance+=dist
+        else:
+            self.brush_run_distance=dist
+        self.brush_last_vector=(dx,dy)
+        while self.brush_reversals and now-self.brush_reversals[0] > .85:
+            self.brush_reversals.popleft()
+        while self.brush_short_strokes and now-self.brush_short_strokes[0] > .85:
+            self.brush_short_strokes.popleft()
+        if len(self.brush_reversals) >= 2 or len(self.brush_short_strokes) >= 2:
+            self.brush_fast_until=now+.38
+        if hasattr(self.audio, 'set_fast_coloring'):
+            self.audio.set_fast_coloring(1. if now<self.brush_fast_until else 0.)
 
     def _detect_new_pass(self,dx,dy,dist,now):
         # One new sound only when the hand makes a meaningful NEW pass.
@@ -175,6 +223,10 @@ class StrokeController:
 
 
     def mouse_up(self):
+        if self.active and self.mode == 'brush':
+            now=time.monotonic()
+            if 4 <= self.travel <= 95 and now-self.brush_stroke_started_at <= .34:
+                self.brush_short_strokes.append(now)
         if self.active or self.started:self.audio.stop_stroke()
         self.active=False
         self.started=False
@@ -188,6 +240,9 @@ class StrokeController:
         # Quiet on a mouse pause without stopping or retriggering.
         if self.active and self.started and time.monotonic()-self.last_motion>.10:
             self.audio.update_motion(0)
+            if self.mode == 'brush' and time.monotonic()-self.last_motion>.45:
+                if hasattr(self.audio, 'set_fast_coloring'):
+                    self.audio.set_fast_coloring(0.)
 
     def disable(self):
         self.active=False

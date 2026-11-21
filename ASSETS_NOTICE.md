@@ -15,3 +15,8 @@ Las 20 nuevas muestras fueron proporcionadas por la persona usuaria desde Eleven
 El archivo `assets/icon.png` se copió byte por byte desde el PNG proporcionado por la persona usuaria en esta conversación. SHA256: `042ce253a146d9b75e77fa68ef5044ba1f4b02d50c53e129c88a4dca4819d34b`.
 
 El archivo `assets/icon.ico` se generó automáticamente a partir de esos mismos píxeles únicamente porque el ejecutable de Windows requiere icono de formato ICO. No es otro diseño. Los 37 WAV se mantienen sin cambios: el programa selecciona partes centrales de grabaciones reales al crear transiciones, sin alterar los originales que se conservan en disco.
+
+
+## v0.14 — Audios adicionales de pintura
+
+Se incorporaron siete nuevas grabaciones de ElevenLabs aportadas por la persona usuaria; los archivos se identifican en el catálogo mediante `source_filename`. Solo el sonido B/J de 10 segundos se acondicionó para unirse consigo mismo en un bucle; los otros seis recibieron ganancia fija y conversión mono/44,1 kHz. Los 15 WAV existentes de B/J se nivelaron del mismo modo. Los WAV de P/E no fueron modificados. El material original continúa perteneciendo a sus respectivos titulares; comprueba los términos de publicación/uso de ElevenLabs para distribuirlo públicamente.

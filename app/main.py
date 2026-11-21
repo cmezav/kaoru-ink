@@ -22,7 +22,7 @@ def main():
     app=QApplication(sys.argv)
     app.setApplicationName('Kaoru Ink')
     app.setQuitOnLastWindowClosed(False)
-    icon=resource('assets/icon.png') if resource('assets/icon.png').exists() else resource('assets/icon.ico')
+    icon=resource('assets/icon.png')
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
 
     # Prevent duplicate playback hooks and duplicate tray icons on login.

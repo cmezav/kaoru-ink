@@ -134,18 +134,17 @@ class MainWindow(QMainWindow):
         self.pencil_button.setChecked(True)
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addStretch()
         h.addLayout(mode_row)
-        h.addWidget(text('P: una sola reproducción por trazo, sostenida y suave. B: pintura en bucle solo mientras arrastras.','muted'))
+        h.addWidget(text('P: un SOLO roce aislado por trazo. No se mezclan ni encadenan sonidos. B: loop limpio mientras pintas.','muted'))
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('78 sonidos remasterizados · P usa un solo sonido continuo; únicamente B repite su muestra. Los ★ son tus favoritos del segundo 7–9.','muted'))
+        samples.layout().addWidget(text('15 roces INDIVIDUALES de lápiz (sin ataques adicionales) y 4 loops limpios de pincel. Se retiraron los 12 B con ruido de grabación.','muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
-            ('short','01 · Inicio de trazo','El primer roce de P. Un sonido por trazo, sin repetir.','short_id'),
-            ('medium','02 · Cuerpo del trazo','Se une suavemente al inicio si mantienes P.','medium_id'),
-            ('long','03 · Textura sostenida','Se alarga en el mismo sonido de P, sin iniciar otro ni hacer loop.','long_id'),
-            ('brush','04 · Pintar en bucle','Al deslizar el pincel con B, hasta detenerte.','brush_id')):
+            ('pencil','01 · P: un solo roce','Cada trazo usa una sola muestra aislada; alargas el mismo roce hasta soltar.', 'pencil_id'),
+            ('brush','02 · B: colorear en loop','Solo sonidos de la fuente limpia, sin ruido continuo de grabación.', 'brush_id')):
+
             p=QFrame();line=QVBoxLayout(p);line.setContentsMargins(0,8,0,8);line.setSpacing(5)
             line.addWidget(text(heading,'headline'));line.addWidget(text(info,'muted'))
             r=QHBoxLayout();r.setSpacing(12)
@@ -174,7 +173,7 @@ class MainWindow(QMainWindow):
         self.speed_slider=QSlider(Qt.Orientation.Horizontal);self.speed_slider.setRange(45,120);self.speed_slider.setSingleStep(5);self.speed_slider.setPageStep(5);self.speed_slider.setValue(self.settings['speed'])
         speed_col.addWidget(self.speed_slider);grid.addLayout(speed_col,1)
         content.addLayout(grid)
-        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,65×. Baja a 0,50× para dibujar aún más despacio.','muted'))
+        content.addWidget(text('Mover la velocidad también cambia el tono, como acelerar una grabación. La velocidad inicial es 0,55×. Cada muestra P se estira a un roce sostenido, sin varios rayones seguidos.','muted'))
         body.addWidget(controls)
         options,option_layout=panel()
         option_layout.addWidget(text('En segundo plano','headline'))
@@ -186,7 +185,7 @@ class MainWindow(QMainWindow):
         option_layout.addWidget(self.close_check)
         option_layout.addWidget(text('El icono junto al reloj permite volver a abrir la ventana, silenciar o salir. La configuración se guarda en tu computadora.','muted'))
         body.addWidget(options)
-        body.addWidget(text('Kaoru Ink 0.1 · Inspirado en Mechvibes · Solo Windows · El sonido requiere Clip Studio Paint en primer plano.','muted'))
+        body.addWidget(text('Kaoru Ink 0.3 · Inspirado en Mechvibes · Solo Windows · El sonido requiere Clip Studio Paint en primer plano.','muted'))
         body.addStretch()
         scroll.setWidget(inner);root.addWidget(scroll,1)
         self.vol_label.setText(f"{self.settings['volume']} %")
@@ -212,7 +211,7 @@ class MainWindow(QMainWindow):
         self.bus.tool.connect(self._set_mode)
         self.pencil_button.clicked.connect(lambda:self._set_mode('pencil'))
         self.brush_button.clicked.connect(lambda:self._set_mode('brush'))
-        for category,setting in [('short','short_id'),('medium','medium_id'),('long','long_id'),('brush','brush_id')]:
+        for category,setting in [('pencil','pencil_id'),('brush','brush_id')]:
             self.combos[category].currentIndexChanged.connect(lambda _,c=category,k=setting:self._selected(c,k))
             self.preview_buttons[category].clicked.connect(lambda _,c=category:self._preview(c))
         self.vol_slider.valueChanged.connect(self._volume)

@@ -40,8 +40,7 @@ class FakeAudio:
 class StrokeTests(unittest.TestCase):
     def setUp(self):
         self.audio = FakeAudio()
-        self.settings = {'short_id':'auto', 'medium_id':'auto',
-                         'long_id':'auto', 'brush_id':'auto'}
+        self.settings = {'pencil_id':'pencil_single_03', 'brush_id':'auto'}
         self.controller = Controller(self.audio, self.settings)
 
     def test_pencil_only_one_play_even_for_very_long_stroke(self):

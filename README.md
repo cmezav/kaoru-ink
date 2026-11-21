@@ -1,89 +1,49 @@
-# ✎ Kaoru Ink — Painting SFX
+# Kaoru Ink v0.3 — one pencil scrape per stroke
 
-**Sonidos naturales al dibujar con el mouse en Clip Studio Paint.** Inspirado en la idea de retroalimentación sonora de [Mechvibes](https://github.com/hainguyents13/mechvibes), pero con código independiente, limitado a Windows 10/11 y enfocado exclusivamente en trazos de dibujo.
+Windows desktop companion for Clip Studio Paint. Inspired by Mechvibes, with independent code.
 
-![Logo de nota musical azul de Kaoru Ink](assets/icon.png)
+![Logo original aportado por la usuaria](assets/icon.png)
 
-**v0.2:** logo azul aportado por la persona usuaria, lápiz P sin loop, B con loop, sonidos por defecto más lentos.
+## Modo P — **UN SOLO roce**, no muchos rayones
 
-## ¿Qué hace?
+- Only responds when **Clip Studio Paint is the foreground application**.
+- Press **P** to select pencil, hold the **left mouse button**, then move the mouse.
+- **Exactly one audio file is triggered for the entire stroke.** The selected WAV is sourced from a *single isolated physical scrape* and time-stretched to a longer sound. No intro+medium+long mix, no additional strokes, and no looping in P.
+- Releasing the mouse or stopping the drag fades the sound. The same mouse-down never triggers a second scratch.
+- The WAV lasts 9 seconds at normal playback speed, or approximately 16.4 seconds at default 0.55×. Longer strokes become silent after that limit; **P never restarts or loops**.
+- There are **15 individual pencil scrapes** to choose from, including 12 derived from the favorite 7–9 second interval (split *between* audible scratches rather than retaining the original sequence).
 
-- **Solo funciona con Clip Studio Paint como ventana activa (en primer plano).** Si cambias a Chrome, al escritorio o a otra aplicación, se detienen los loops. El programa puede permanecer en la bandeja del sistema sin ocupar sitio en la barra de tareas.
-- Si pulsas **P** mientras Clip Studio Paint está al frente, activa el modo **Lápiz**. Un clic sin desplazamiento es silencioso; al mover el mouse con botón izquierdo presionado, inicia **UNA única reproducción** por cada trazo. La grabación combina suavemente un inicio corto, una parte media y una textura más larga; no vuelve a disparar otra muestra ni activa un bucle en P. La grabación se sostiene hasta 20 s como máximo y se desvanece cuando sueltas el botón o dejas de moverlo.
-- Si pulsas **B**, activa el modo **Pincel**. Mientras arrastras el mouse, elige un loop de pintura con uniones suavizadas. Al dejar de moverlo por **0,32 s** o soltarlo, el audio se desvanece.
-- Biblioteca incluida: **78 sonidos** (37 cortos, 16 medios, 13 largos, 12 loops de pintura), entre los cuales hay 8 favoritos del segmento **7,55–9,20 segundos** del audio original de lápiz.
-- En la ventana se puede escuchar cada muestra, elegirla individualmente o alternar automáticamente, ajustar **volumen** y **velocidad/tono** (0,45× a 1,20×; **0,65× por defecto**), cambiar P/B manualmente y silenciar.
-- **Inicio automático** al entrar a Windows mediante `HKCU\...\Run` (sin administrador), activado por defecto en el `.exe`; al iniciar con Windows se abre **oculto en la bandeja**.
-- **Cerrar la ventana = minimizar a bandeja** por defecto. Clic derecho sobre el icono para abrirla o salir.
-- Ajustes locales: `%APPDATA%\KaoruInk\settings.json`.
-- **No** registra ni almacena pulsaciones. El teclado solo sirve para reconocer P/B cuando CSP está en primer plano; **no** añade sonidos de teclado.
+## Modo B — pintar en loop **sin el ruido de grabación anterior**
 
-### Alcance y limitaciones
+- Press **B** in Clip Studio to select brush mode.
+- **B is the ONLY mode with looping sound**. Loop runs while dragging, fades on release or when motion stops.
+- All **12 previous B WAVs were removed** because the original paint recording has continuous background noise during idle sections.
+- Replaced with **4 clean, dry stroke loops** derived from the *Drawing* source, whose gaps are effectively silent. These may sound drier than the original brush recording but do not carry its constant ambient hiss.
 
-El ejecutable se compila para Windows en GitHub Actions; este repositorio no contiene un `.exe` previamente compilado. En Windows, algunas tabletas o lápices digitales pueden generar eventos compatibles con mouse: esta versión escucha eventos de arrastre del botón izquierdo y no identifica físicamente cada dispositivo USB. Los atajos P/B se detectan sin Ctrl/Alt/Windows; si modificaste tus atajos de Clip Studio, cambia la herramienta manualmente en la app. Si ejecutas Clip Studio con privilegios de administrador, podrías necesitar ejecutar la app con un nivel de permisos equivalente para recibir eventos de entrada. De forma predeterminada, **no** se ejecuta como administrador.
+## Ajustes
 
-En P se construye una sola muestra larga a partir de los recortes seleccionados. Su textura sostenida utiliza transiciones internas, no reproducción en bucle ni múltiples disparos por trazo; para trazos de más de 20 segundos puede agotarse el sonido. El modo B es el único que hace loop.
+- Default playback speed: **0.55×**; adjustable from 0.45× to 1.20×.
+- One sound selector for P and one selector for B, plus previews.
+- Volume slider, mute and tray icon; application may start in the background on Windows logon.
+- **The original PNG icon is kept byte-for-byte unchanged** under `assets/icon.png`. Windows `.ico` is a technical conversion of the same art.
+- Clip Studio detection uses the foreground window and P/B key events. It doesn't modify Clip Studio or record the keyboard.
 
-La app solo reproduce sonido: **no dibuja en Clip Studio ni intercepta el trazo real**. La selección de modo se basa en los atajos P/B que pulsas, no en leer internamente el pincel activo desde la API de Clip Studio. El sonido es una simulación sincronizada con los movimientos del mouse, no con la presión real del pincel.
+## Build your Windows EXE
 
-## Uso en Windows (ejecutable)
+Commit/push to GitHub then open **Actions → Build Windows EXE**. Successful builds provide `KaoruInk-Windows` with `KaoruInk.exe`.
 
-1. Descarga `KaoruInk.exe` desde **Actions → Build Windows EXE → Artifacts → KaoruInk-Windows** o desde una Release etiquetada.
-2. Colócalo en una ruta fija, por ejemplo `%LOCALAPPDATA%\Programs\KaoruInk\KaoruInk.exe`. Evita mover el archivo después de activar el inicio automático.
-3. Abre `KaoruInk.exe` y deja marcada la opción *Iniciar automáticamente al entrar a Windows*.
-4. Abre Clip Studio Paint, selecciona P (lápiz) o B (pincel) y arrastra con el botón izquierdo. Regresa a Kaoru Ink desde el icono junto al reloj cuando quieras cambiar un sonido.
-
-> Windows SmartScreen puede advertir que el archivo no está firmado. El compilado de GitHub Actions no utiliza un certificado de firma de código. Comprueba que lo descargaste de tu propio repositorio y revisa el código antes de ejecutarlo.
-
-## Publicar en la cuenta cmezav
-
-Primero abre una terminal PowerShell dentro de la carpeta de este proyecto, con Git y GitHub CLI (`gh`) instalados:
-
-```powershell
-gh auth login
-git init
-git branch -M main
-git add .
-git commit -m "feat: launch Kaoru Ink for Clip Studio Paint"
-gh repo create cmezav/kaoru-ink --private --source . --remote origin --push
-```
-
-Se recomienda **privado inicialmente** hasta revisar los permisos de los sonidos. Luego en el repositorio, `Actions → Build Windows EXE` permite ejecutarlo manualmente. También se genera automáticamente al hacer `git push` a `main`.
-
-Descargar el resultado tras completar la ejecución:
-
-```powershell
-$repo = 'cmezav/kaoru-ink'
-$run = gh run list -R $repo --workflow build-windows.yml --limit 1 --json databaseId --jq '.[0].databaseId'
-gh run watch $run -R $repo --exit-status
-$dest = Join-Path $env:USERPROFILE 'Downloads\KaoruInk-build'
-gh run download $run -R $repo --name KaoruInk-Windows --dir $dest
-$install = Join-Path $env:LOCALAPPDATA 'Programs\KaoruInk'
-New-Item -ItemType Directory -Force $install | Out-Null
-Copy-Item (Join-Path $dest 'KaoruInk.exe') (Join-Path $install 'KaoruInk.exe') -Force
-Start-Process (Join-Path $install 'KaoruInk.exe')
-```
-
-Para una Release instalable desde una URL fija, crea una etiqueta:
-
-```powershell
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Se adjuntará `KaoruInk.exe` a `https://github.com/cmezav/kaoru-ink/releases/tag/v0.1.0` cuando termine la ejecución del workflow de la etiqueta.
-
-## Desarrollo y compilación local
+To test on a Windows development machine:
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
+python -m unittest discover -s tests -v
 python run.py
 ```
 
-El script para regenerar audio a partir de los **tres originales** está disponible en `tools/remaster_audio.py` y necesita `requirements-audio.txt`. Los archivos originales **no están incluidos** en este repositorio. Los WAV recortados y el catálogo `assets/sample-catalog.csv` sí están incluidos.
+The curated WAVs were built using `tools/curate_sounds.py` (install `requirements-audio.txt`); use it with the two supplied MP3 source files if regenerating. Both input MP3s are intentionally excluded from the repository.
 
-## Créditos y derechos
+## Rights
 
-Inspiración de UX: [Mechvibes](https://github.com/hainguyents13/mechvibes) (licencia MIT). Esta app no copia el proyecto Rust/Dioxus. Código original Kaoru Ink: MIT. Para los archivos de audio, ver [ASSETS_NOTICE.md](ASSETS_NOTICE.md); **las licencias de las grabaciones originales no han sido verificadas**.
+License MIT applies to the original code only. **Licenses for the audio source recordings have not been independently verified.** File names or "no copyright" descriptions are insufficient proof of redistribution rights. Review `ASSETS_NOTICE.md` before keeping these WAVs in a public repository or releasing an executable.

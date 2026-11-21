@@ -90,7 +90,7 @@ class MouseKeyboardMonitor:
 
 
 class StrokeController:
-    """P: one ongoing one-shot per drag. B: loop only while actually moving."""
+    """P: one actual *single scrape* for each drag; B loops only while moving."""
     def __init__(self, audio, settings):
         self.audio = audio
         self.settings = settings
@@ -139,11 +139,7 @@ class StrokeController:
                 self.audio.start_loop('brush', self.settings['brush_id'])
                 self.brush_playing = True
         elif self.travel >= 5 and not self.pencil_started and not self.pencil_finished:
-            self.audio.start_pencil(
-                self.settings['short_id'],
-                self.settings['medium_id'],
-                self.settings['long_id'],
-            )
+            self.audio.start_pencil(self.settings['pencil_id'])
             self.pencil_started = True
 
     def mouse_up(self):

@@ -8,10 +8,8 @@ DEFAULTS = {
     'start_at_login': True,
     'close_to_tray': True,
     'volume': 76,
-    'speed': 65,
-    'short_id': 'auto',
-    'medium_id': 'pencil_medium_fav_01',
-    'long_id': 'pencil_fav_long_01',
+    'speed': 55,
+    'pencil_id': 'pencil_single_03',
     'brush_id': 'auto',
 }
 

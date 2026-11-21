@@ -1,16 +1,11 @@
-# Audio notice
+# Assets and rights
 
-The 78 curated WAV clips were generated from three user-provided audio recordings:
+**Audio v0.3:** 15 individually isolated pencil-contact recordings were derived from `Pencil Drawing Sound Effect - Voting Check Mark.mp3`, mostly from the 7–9 second region. The original region contained multiple audible scratches; **each new P sample is taken from only one short contact**, then lengthened using a phase vocoder.
 
-- `Pencil Drawing Sound Effect - Voting Check Mark.mp3` (pencil)
-- `Drawing - Sound effects HD sfx No copyright ( download Link ).mp3` (drawing)
-- `Paint Brush Stroke ASMR Calming Canvas Sounds & Gentle Application Pure Relaxation.mp3` (brush)
+**B:** all 12 earlier brush WAVs from `Paint Brush Stroke ASMR Calming Canvas Sounds & Gentle Application Pure Relaxation.mp3` were **deleted** for carrying continuous recording background. The 4 replacement B loops use only short, clean regions of `Drawing - Sound effects HD sfx No copyright ( download Link ).mp3`. They have a dry brush / drawing texture without the previous recording's continuous idle noise.
 
-Each exported WAV is a transformed excerpt of the source material, **not original sound design by this code repository's author**. The sample catalog records the source ID and exact source time interval of every derived WAV. The local processing pipeline is located at `tools/remaster_audio.py`.
+These are edited samples, not original recordings owned by the application author. Sample IDs, source and precise crop positions are documented in `assets/sample-catalog.csv`. The reproducible processing code is `tools/curate_sounds.py`.
 
-**Audio rights have not been independently verified.** A filename containing “no copyright” is not proof of a license. Do not redistribute these samples publicly or attach them to public Releases until you have confirmed that your permissions cover redistribution and derivative works. A private repository is the recommended default. The MIT license applies only to the original application source code, **not** to these audio files.
+**Licenses of the recordings have not been verified**. A file named "No copyright" does not establish a license. Do not publicly distribute any derivative audio or binary embedding it without confirming derivative/distribution rights from the respective owners. The MIT application code license does not cover audio files.
 
-The app does not download or transmit audio or user input. The clips are local resources bundled in the executable.
-
-
-La imagen de la nota musical azul que ahora sirve de icono fue proporcionada por la persona usuaria; no se ha verificado una licencia de redistribución independiente de esa imagen.
+The user-supplied original blue music-note art is at `assets/icon.png`, copied byte-for-byte; the `.ico` is only a Windows-specific file format conversion. Any rights to the art are separate from the code license.

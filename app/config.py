@@ -10,6 +10,7 @@ PARAMETERS={'volume':(0,100,100),'speed':(45,120,100),'pitch':(-8,8,0),
 DEFAULTS={
     'start_at_login':True,
     'close_to_tray':True,
+    'visual_detection_enabled':True,
     'volume':76,  # overall safety volume; each tool has independent controls
     'per_tool_controls_v1':True,
     'pencil_id':'auto',

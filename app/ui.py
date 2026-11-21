@@ -1,5 +1,6 @@
 """Kaoru Ink Windows settings panel and system-tray control."""
 from pathlib import Path
+import time
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtGui import QIcon,QAction,QFont,QPixmap
 from PySide6.QtWidgets import (
@@ -11,6 +12,7 @@ from . import config
 from .focus import foreground_paint
 from .input_monitor import InputEvents,MouseKeyboardMonitor,StrokeController
 from .pen_pressure import WintabPressureMonitor
+from .visual_csp import CspVisualDetector
 
 STYLE = '''
 QMainWindow,QWidget#root,QScrollArea#scroll { background: #12111c; color: #f4efff; }
@@ -73,6 +75,8 @@ class MainWindow(QMainWindow):
         self.audio=audio
         self.settings=settings
         self.controller=StrokeController(audio,settings)
+        self.visual_detector=CspVisualDetector(settings.get('visual_detection_enabled',True))
+        self.visual_keyboard_until=0.0
         self.bus=InputEvents()
         self.monitor=MouseKeyboardMonitor(self.bus)
         self.pressure_monitor=WintabPressureMonitor(self.bus.pressure.emit)
@@ -148,6 +152,11 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(self.pencil_button);mode_row.addWidget(self.brush_button);mode_row.addWidget(self.eraser_button);mode_row.addStretch()
         h.addLayout(mode_row)
         h.addWidget(text('P/B/J/E: sonido continuo ligado al movimiento. Se combinan zonas de las grabaciones reales sin volver a disparar los ataques originales. B/J adapta la mezcla a la dirección del lápiz.','muted'))
+        self.visual_check=QCheckBox('Detectar herramientas al hacer clic en CSP (experimental, 1920 × 1080)')
+        self.visual_check.setChecked(self.settings.get('visual_detection_enabled',True))
+        h.addWidget(self.visual_check)
+        self.visual_status=text('Detección visual: comprobando barra de herramientas…','muted')
+        h.addWidget(self.visual_status)
         body.addWidget(hero)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
@@ -254,7 +263,7 @@ class MainWindow(QMainWindow):
         self.bus.down.connect(self._on_down)
         self.bus.moved.connect(self._on_move)
         self.bus.up.connect(self.controller.mouse_up)
-        self.bus.tool.connect(self._set_mode)
+        self.bus.tool.connect(self._on_keyboard_mode)
         self.bus.pressure.connect(self._on_pressure)
         self.pencil_button.clicked.connect(lambda:self._set_mode('pencil'))
         self.brush_button.clicked.connect(lambda:self._set_mode('brush'))
@@ -268,6 +277,20 @@ class MainWindow(QMainWindow):
             button.clicked.connect(lambda _,m=mode:self._restore_original_tone(m))
         self.start_check.toggled.connect(self._start_change)
         self.close_check.toggled.connect(self._close_change)
+        self.visual_check.toggled.connect(self._visual_toggle)
+
+    def _on_keyboard_mode(self,mode):
+        # Keyboard remains immediate; let CSP repaint before visual override.
+        self.visual_keyboard_until=time.monotonic()+.9
+        self.visual_detector.reset()
+        self._set_mode(mode)
+
+    def _visual_toggle(self,enabled):
+        self.settings['visual_detection_enabled']=bool(enabled)
+        self.visual_detector.enabled=bool(enabled)
+        self.visual_detector.reset()
+        config.save(self.settings)
+        self.visual_status.setText('Detección visual: activada' if enabled else 'Detección visual: desactivada')
 
     def _selected(self,category,setting):
         self.settings[setting]=self.combos[category].currentData()
@@ -348,6 +371,15 @@ class MainWindow(QMainWindow):
                 self.focused=now
                 if not now:self.audio.stop_all()
                 self._update_status()
+            # Safe visual sync: never change the active mode in the middle
+            # of a stroke or immediately after a keyboard shortcut.
+            visual_mode=self.visual_detector.poll(now)
+            if (visual_mode and not self.controller.active
+                    and time.monotonic() >= self.visual_keyboard_until
+                    and visual_mode != self.controller.mode):
+                self._set_mode(visual_mode)
+            if hasattr(self,'visual_status'):
+                self.visual_status.setText('Detección visual: '+self.visual_detector.reason)
             self.controller.tick(self.focused and not self.muted)
             self.audio.tick()  # Audio is rendered by the low-latency PortAudio callback
             if hasattr(self,'pressure_status'):

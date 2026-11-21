@@ -43,6 +43,7 @@ jobs:
             --icon "assets/icon.ico" `
             --add-data "assets/sounds;assets/sounds" `
             --add-data "assets/icon.ico;assets" `
+            --add-data "assets/icon.png;assets" `
             --hidden-import "pynput.keyboard._win32" `
             --hidden-import "pynput.mouse._win32" `
             --collect-all pygame `

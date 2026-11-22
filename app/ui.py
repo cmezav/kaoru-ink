@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
         body.addWidget(boost_panel)
         samples,_=panel()
         samples.layout().addWidget(text('Biblioteca de trazos','headline'))
-        samples.layout().addWidget(text('37 grabaciones: P (16), B/J (15) y E (6). En automático el motor combina fragmentos de las muestras aprobadas mientras te mueves; los cuatro favoritos aterciopelados siguen incluidos. En manual usa solo la grabación elegida como fuente.','muted'))
+        samples.layout().addWidget(text(f"{len(self.audio.samples)} grabaciones: P ({len(self.audio.by_category['pencil'])}), B/J ({len(self.audio.by_category['brush'])}) y E ({len(self.audio.by_category['eraser'])}). En automático se combinan muestras mientras te mueves; los favoritos aterciopelados se conservan. En manual se usa la grabación elegida como fuente.",'muted'))
         self.combos={}
         self.preview_buttons={}
         for category,heading,info,setting in (
@@ -279,6 +279,7 @@ class MainWindow(QMainWindow):
         self.bus.moved.connect(self._on_move)
         self.bus.up.connect(self.controller.mouse_up)
         self.bus.tool.connect(self._on_keyboard_mode)
+        self.bus.toolbar_click.connect(self._on_toolbar_click)
         self.bus.pressure.connect(self._on_pressure)
         self.pencil_button.clicked.connect(lambda:self._set_mode('pencil'))
         self.brush_button.clicked.connect(lambda:self._set_mode('brush'))
@@ -306,6 +307,22 @@ class MainWindow(QMainWindow):
         self.visual_keyboard_until=time.monotonic()+.9
         self.visual_detector.reset()
         self._set_mode(mode)
+
+    def _on_toolbar_click(self,x,y):
+        # Direct mouse selection is more reliable than a stale highlight.
+        # Never restart an already active stroke; only change the UI mode.
+        # A toolbar click can be the FIRST event after returning to CSP.
+        if not self.focused and foreground_paint():
+            self.focused=True
+            self.visual_detector.reset()
+            self.visual_keyboard_until=0.0
+            self._update_status()
+        if not self.focused or self.controller.active:
+            return
+        mode=self.visual_detector.toolbar_click_mode(x,y,foreground_paint())
+        if mode is not None:
+            self._set_mode(mode)
+            self.visual_status.setText('Detección visual: '+self.visual_detector.reason)
 
     def _visual_toggle(self,enabled):
         self.settings['visual_detection_enabled']=bool(enabled)
@@ -371,6 +388,13 @@ class MainWindow(QMainWindow):
         self._update_status()
 
     def _on_down(self,x,y):
+        # The first pen-down may arrive BEFORE the 45-ms foreground poll.
+        # Re-sync on focus return rather than leaving an old P mode active.
+        if not self.focused and foreground_paint():
+            self.focused=True
+            self.visual_detector.reset()
+            self.visual_keyboard_until=0.0
+            self._update_status()
         if not self.focused or self.muted:
             return
         # Paint starts immediately after a click on B/J. Before the first
@@ -396,12 +420,28 @@ class MainWindow(QMainWindow):
         self.eraser_button.setChecked(mode=='eraser')
         self._update_status()
 
+    def _resync_focus(self):
+        # Confirm the selected CSP tool after its toolbar has been redrawn.
+        # Unknown pixels never force a switch; keyboard remains available.
+        if (not self.focused or self.muted or self.controller.active
+                or not foreground_paint()):
+            return
+        mode=self.visual_detector.snapshot_mode(True)
+        if mode is not None and mode!=self.controller.mode:
+            self._set_mode(mode)
+        self.visual_status.setText('Detección visual: '+self.visual_detector.reason)
+
     def _tick(self):
         try:
             now=foreground_paint()
             if now!=self.focused:
                 self.focused=now
-                if not now:self.audio.stop_all()
+                if not now:
+                    self.audio.stop_all()
+                else:
+                    self.visual_detector.reset()
+                    self.visual_keyboard_until=0.0
+                    QTimer.singleShot(180,self._resync_focus)
                 self._update_status()
             # Safe visual sync: never change the active mode in the middle
             # of a stroke or immediately after a keyboard shortcut.

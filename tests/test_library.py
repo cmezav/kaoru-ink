@@ -8,9 +8,9 @@ class LibraryTests(unittest.TestCase):
     def setUpClass(cls):
         cls.samples=json.loads((SOUNDS/'library.json').read_text(encoding='utf8'))['samples']
     def test_catalogue(self):
-        self.assertEqual(len(self.samples),47)
-        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':16,'brush':25,'eraser':6})
-        self.assertEqual(len({s['id'] for s in self.samples}),47)
+        self.assertEqual(len(self.samples),48)
+        self.assertEqual({c:sum(s['category']==c for s in self.samples) for c in ('pencil','brush','eraser')},{'pencil':16,'brush':26,'eraser':6})
+        self.assertEqual(len({s['id'] for s in self.samples}),48)
         self.assertTrue(all(s['source']=='ElevenLabs (usuario)' for s in self.samples))
         self.assertTrue(all(s['kind']=='curated_real_recording_no_stretch' for s in self.samples if not s['id'].startswith('brush_pair_')))
         self.assertEqual({s['id'] for s in self.samples if s['id'].startswith('brush_pair_')},{'brush_pair_A','brush_pair_B','brush_pair_C'})

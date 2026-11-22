@@ -91,6 +91,7 @@ class CspVisualDetector:
         self.last_key = None
         self.last_score = 0
         self.reason = 'pendiente'
+        self.clicked_until = 0.0
         self._win = None
         self._gdi = None
         if os.name == 'nt':
@@ -112,6 +113,7 @@ class CspVisualDetector:
         self.last_key = None
         self.last_score = 0
         self.last_check = 0.0
+        self.clicked_until = 0.0
 
     def _layout_supported(self):
         if self._win is None:
@@ -153,6 +155,29 @@ class CspVisualDetector:
             self._win.ReleaseDC(None, dc)
         return scores
 
+    def toolbar_click_mode(self, x, y, csp_focused):
+        """A real click on one of five fixed CSP tool icons is an explicit choice.
+
+        Reject other clicks, moved/maximized-layout mismatches, or disabled
+        recognition. Unlike hover color sampling, this doesn't mistake a stale
+        selected background for the user's newly clicked B/J tool.
+        """
+        if not self.enabled or not csp_focused or not self._layout_supported():
+            return None
+        if not (8 <= int(x) <= 42):
+            return None
+        matches = [key for key, _mode, cy in TOOL_POINTS if abs(int(y)-cy) <= 9]
+        if len(matches) != 1:
+            return None
+        key = matches[0]
+        self.stable.candidate = key
+        self.stable.consecutive = STABLE_READS
+        self.stable.selected = key
+        self.clicked_until = self.clock() + 1.25
+        self.last_key = key
+        self.reason = f'{key} -> {mode_for_key(key)} (clic confirmado en barra)'
+        return mode_for_key(key)
+
     def snapshot_mode(self, csp_focused):
         """Strong synchronous read right before a canvas stroke begins.
 
@@ -162,6 +187,8 @@ class CspVisualDetector:
         """
         if not self.enabled or not csp_focused or not self._layout_supported():
             return None
+        if self.clock() < self.clicked_until and self.stable.selected:
+            return mode_for_key(self.stable.selected)
         try:
             scores = self._read_scores()
         except OSError:
@@ -184,6 +211,8 @@ class CspVisualDetector:
             self.reason = 'desactivada' if not self.enabled else 'esperando CSP'
             return None
         now = self.clock()
+        if now < self.clicked_until:
+            return None  # Recent explicit tool click outweighs stale pixels.
         if self.last_check and now - self.last_check < .16:
             return None
         self.last_check = now

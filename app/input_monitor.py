@@ -11,6 +11,7 @@ class InputEvents(QObject):
     moved = Signal(int, int)
     up = Signal()
     tool = Signal(str)
+    toolbar_click = Signal(int, int)
     pressure = Signal(float)
     issue = Signal(str)
 
@@ -20,6 +21,7 @@ class MouseKeyboardMonitor:
         self.bus=bus
         self.engaged=False
         self.last_emit=0.
+        self.toolbar_pressed_at=None
         self.mods=set()
         self.mouse_listener=None
         self.keyboard_listener=None
@@ -37,9 +39,15 @@ class MouseKeyboardMonitor:
         if button!=self.mouse.Button.left:return
         if pressed:
             self.engaged=foreground_paint()
+            self.toolbar_pressed_at=(int(x),int(y)) if self.engaged and 8<=int(x)<=42 else None
             if self.engaged:self.bus.down.emit(int(x),int(y))
         else:
             if self.engaged:self.bus.up.emit()
+            start=self.toolbar_pressed_at
+            if (start is not None and abs(int(x)-start[0])<=7
+                    and abs(int(y)-start[1])<=7 and foreground_paint()):
+                self.bus.toolbar_click.emit(int(x),int(y))
+            self.toolbar_pressed_at=None
             self.engaged=False
 
     def on_move(self,x,y):

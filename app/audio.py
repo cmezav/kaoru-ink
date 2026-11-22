@@ -24,6 +24,12 @@ RATE = 44100
 MODES = ('pencil', 'brush', 'eraser')
 BRUSH_TWO_STROKE = ('brush_pair_A', 'brush_pair_B', 'brush_pair_C')
 
+# Compensate only recorded loudness; preserve pitch, playback, pressure dynamics.
+# P/E recordings were delivered around -35 dBFS RMS after earlier mastering,
+# while B/J was mastered around -28 dBFS. Keep the user volume controls.
+CATEGORY_GAIN_DB = {'pencil': 12.0, 'brush': 4.0, 'eraser': 10.0}
+CATEGORY_GAIN = {mode: 10.0 ** (db / 20.0) for mode, db in CATEGORY_GAIN_DB.items()}
+
 
 def _overlap_stretch(data, factor):
     """Optional user-requested speed change only. No automatic time stretch."""
@@ -479,6 +485,7 @@ class AudioEngine:
             self.motion_gate = next_gate
             fx = self.effects[self.active_mode]
             gain = self.volume * (fx['volume']/100.) * self._strength()
+            gain *= CATEGORY_GAIN[self.active_mode]
             # Gate is driven by movement; pressure changes amplitude in real time.
             result *= gate*gain
             self.rendered_frames += frames
@@ -492,6 +499,7 @@ class AudioEngine:
             n = min(frames,max(0,left))
             if n:
                 preview_gain = self.volume*(self.effects[self.preview_mode]['volume']/100.)*.7
+                preview_gain *= CATEGORY_GAIN[self.preview_mode]
                 result[:n] += self.preview_pcm[self.preview_pos:self.preview_pos+n]*preview_gain
                 self.preview_pos += n
             if self.preview_pos >= len(self.preview_pcm):
